@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ניהול משמרות - מכון נועם</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
   :root {
     --bg: #f4f6fa;
@@ -49,6 +51,7 @@
   .header-logo { display: flex; align-items: center; gap: 10px; }
   .header-logo svg { height: 28px; width: auto; }
   .header-title { font-size: 14px; color: var(--muted); font-weight: 500; border-right: 1px solid var(--border); padding-right: 10px; }
+  #sync-status { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); margin-right: auto; padding: 0 10px; }
 
   .tabs { display: flex; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 10px; }
   .tab { padding: 8px 14px; background: transparent; border: none; border-radius: 8px; font-size: 14px; color: var(--muted); transition: all .15s; }
@@ -358,6 +361,7 @@
     </svg>
     <span class="header-title">ניהול משמרות</span>
   </div>
+  <span id="sync-status"></span>
   <div class="tabs">
     <button class="tab active" data-view="today">היום שלי</button>
     <button class="tab" data-view="schedule">לו"ז שבועי</button>
@@ -663,6 +667,74 @@ const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','�
 const TIME_MIN = 6, TIME_MAX = 23;
 const STORAGE_KEY = 'shift_manager_v2';
 
+// ===== FIREBASE CONFIG =====
+// Replace with your Firebase project config from console.firebase.google.com
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAy90TSSUQt20Ngyey0Dr6fyxUlb5m8r0M",
+  authDomain: "machonnoam-shifts.firebaseapp.com",
+  databaseURL: "https://machonnoam-shifts-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "machonnoam-shifts",
+  storageBucket: "machonnoam-shifts.firebasestorage.app",
+  messagingSenderId: "654875976135",
+  appId: "1:654875976135:web:95e1a6cd0bb458acfc79e2"
+};
+
+let fbRef = null;
+let fbWritePending = false;
+
+function setSyncStatus(status) {
+  const el = document.getElementById('sync-status');
+  if (!el || PUBLIC_MODE) return;
+  const map = {
+    ok:          { dot: '#16a34a', label: 'מסונכרן' },
+    connecting:  { dot: '#d97706', label: 'מתחבר...' },
+    error:       { dot: '#dc2626', label: 'לא מחובר' },
+  };
+  const s = map[status] || map.error;
+  el.innerHTML = `<span style="width:7px;height:7px;border-radius:50%;background:${s.dot};display:inline-block"></span>${s.label}`;
+}
+
+function saveToFirebase() {
+  if (!fbRef) return;
+  fbWritePending = true;
+  state._savedAt = Date.now();
+  fbRef.set(state)
+    .then(() => { fbWritePending = false; setSyncStatus('ok'); })
+    .catch(e => { fbWritePending = false; setSyncStatus('error'); console.error('Firebase write error:', e); });
+}
+
+function initFirebase() {
+  if (!FIREBASE_CONFIG.databaseURL) return;
+  try {
+    const app = firebase.initializeApp(FIREBASE_CONFIG);
+    const db  = firebase.database(app);
+    fbRef = db.ref('state');
+    setSyncStatus('connecting');
+    fbRef.on('value', snap => {
+      setSyncStatus('ok');
+      if (fbWritePending) return;
+      const data = snap.val();
+      if (!data || !data.agents) {
+        // Firebase is empty — push our local state up
+        saveToFirebase();
+        return;
+      }
+      const remote = migrateState(data);
+      // Take whichever copy was saved more recently
+      if (!state._savedAt || (remote._savedAt && remote._savedAt > state._savedAt)) {
+        state = remote;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+        render();
+      }
+    }, err => {
+      setSyncStatus('error');
+      console.error('Firebase listener error:', err);
+    });
+  } catch(e) {
+    console.error('Firebase init error:', e);
+  }
+}
+
 // Detect public / read-only mode
 const PUBLIC_MODE = new URLSearchParams(window.location.search).has('v');
 
@@ -733,37 +805,36 @@ function seedState() {
   };
 }
 
+function migrateState(p) {
+  if (!p.absences)   p.absences  = [];
+  if (!p.templates)  p.templates = [];
+  if (!p.dayTypes)   p.dayTypes  = {};
+  if (!p.standards)  p.standards = {};
+  Object.entries(ROLES).forEach(([rid, ri]) => {
+    const n = Math.round((ri.end - ri.start) * 2);
+    const makeDay = () => new Array(n).fill(0);
+    if (!p.standards[rid]) {
+      p.standards[rid] = Array.from({length: 7}, makeDay);
+    } else if (typeof p.standards[rid][0] === 'number') {
+      p.standards[rid] = p.standards[rid].map(v => new Array(n).fill(v || 0));
+    } else {
+      while (p.standards[rid].length < 7) p.standards[rid].push(makeDay());
+      p.standards[rid] = p.standards[rid].map(dayArr => {
+        const a = Array.isArray(dayArr) ? [...dayArr] : [];
+        while (a.length < n) a.push(0);
+        return a.slice(0, n);
+      });
+    }
+  });
+  return p;
+}
+
 function loadAdminState() {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
     if (data) {
       const p = JSON.parse(data);
-      if (p.agents && p.shifts) {
-        if (!p.absences)   p.absences  = [];
-        if (!p.templates)  p.templates = [];
-        if (!p.dayTypes)   p.dayTypes  = {};
-        // migrate standards to per-slot format
-        if (!p.standards) p.standards = {};
-        Object.entries(ROLES).forEach(([rid, ri]) => {
-          const n = Math.round((ri.end - ri.start) * 2);
-          const makeDay = () => new Array(n).fill(0);
-          if (!p.standards[rid]) {
-            p.standards[rid] = Array.from({length: 7}, makeDay);
-          } else if (typeof p.standards[rid][0] === 'number') {
-            // old format: [n0..n6] → expand each number to fill all slots
-            p.standards[rid] = p.standards[rid].map(v => new Array(n).fill(v || 0));
-          } else {
-            // ensure 7 days and correct slot count per day
-            while (p.standards[rid].length < 7) p.standards[rid].push(makeDay());
-            p.standards[rid] = p.standards[rid].map(dayArr => {
-              const a = Array.isArray(dayArr) ? [...dayArr] : [];
-              while (a.length < n) a.push(0);
-              return a.slice(0, n);
-            });
-          }
-        });
-        return p;
-      }
+      if (p.agents && p.shifts) return migrateState(p);
     }
   } catch(e) { console.error('loadAdminState error:', e); }
   return seedState();
@@ -810,6 +881,7 @@ function toggleDayType(dateKey) {
 function saveState() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
   catch(e) { console.error('saveState error:', e); showToast('שגיאה בשמירה: ' + e.message, 'danger'); }
+  saveToFirebase();
 }
 
 // ===== Date helpers =====
@@ -1723,6 +1795,7 @@ function setupEvents() {
 
 setupEvents();
 render();
+if (!PUBLIC_MODE) initFirebase();
 setInterval(() => { if (!PUBLIC_MODE && currentView==='today') renderTodayView(); if (PUBLIC_MODE) renderPublicView(); }, 60000);
 </script>
 </body>
