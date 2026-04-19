@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ניהול משמרות - מכון נועם</title>
+<style>
+  :root {
+    --bg: #f4f6fa;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --danger: #dc2626;
+    --success: #16a34a;
+    --warning: #d97706;
+    --warning-bg: #fef3c7;
+    --service: #3b82f6;
+    --service-bg: #dbeafe;
+    --sales: #16a34a;
+    --sales-bg: #dcfce7;
+    --offline: #6b7280;
+    --offline-bg: #e5e7eb;
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; font-family: 'Segoe UI','Arial Hebrew','David',Tahoma,sans-serif; background: var(--bg); color: var(--text); direction: rtl; -webkit-font-smoothing: antialiased; }
+  button { font-family: inherit; cursor: pointer; }
+  input, select, textarea { font-family: inherit; }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .header-logo { display: flex; align-items: center; gap: 10px; }
+  .header-logo svg { height: 28px; width: auto; }
+  .header-title { font-size: 14px; color: var(--muted); font-weight: 500; border-right: 1px solid var(--border); padding-right: 10px; }
+
+  .tabs { display: flex; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 10px; }
+  .tab { padding: 8px 14px; background: transparent; border: none; border-radius: 8px; font-size: 14px; color: var(--muted); transition: all .15s; }
+  .tab.active { background: var(--card); color: var(--primary-dark); font-weight: 600; box-shadow: var(--shadow); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── CARDS ── */
+  .card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px; }
+  .card h2 { margin: 0 0 16px; font-size: 18px; color: var(--primary-dark); display: flex; align-items: center; gap: 8px; }
+
+  /* ── BUTTONS ── */
+  .btn { padding: 8px 14px; border: 1px solid var(--border); background: var(--card); border-radius: 8px; font-size: 14px; color: var(--text); transition: all .15s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .btn:hover { background: #f9fafb; border-color: #d1d5db; }
+  .btn-primary { background: var(--primary); color: white; border-color: var(--primary); }
+  .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+  .btn-danger { background: var(--danger); color: white; border-color: var(--danger); }
+  .btn-danger:hover { background: #b91c1c; }
+  .btn-success { background: var(--success); color: white; border-color: var(--success); }
+  .btn-purple { background: #7c3aed; color: white; border-color: #7c3aed; }
+  .btn-purple:hover { background: #6d28d9; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+  /* ── FORM ── */
+  input[type="text"], select, textarea { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: white; width: 100%; }
+  textarea { resize: vertical; min-height: 64px; }
+  input[type="text"]:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+
+  /* ── TOOLBAR ── */
+  .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .toolbar .spacer { flex: 1; min-width: 8px; }
+  .week-nav { display: flex; align-items: center; gap: 8px; }
+  .week-label { font-weight: 600; color: var(--primary-dark); min-width: 200px; text-align: center; }
+
+  /* ── SCHEDULE TABLE ── */
+  .schedule-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .schedule { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 720px; }
+  .schedule th, .schedule td { border: 1px solid var(--border); padding: 8px; text-align: center; vertical-align: top; background: white; }
+  .schedule th { background: #f8fafc; font-size: 13px; color: var(--muted); font-weight: 600; }
+  .day-header { font-size: 14px; color: var(--text); }
+  .day-header .day-date { display: block; font-size: 11px; color: var(--muted); font-weight: normal; margin-top: 2px; }
+  .day-header.today { background: var(--warning-bg) !important; color: var(--warning); }
+
+  /* ── AGENT ROW ── */
+  .agent-cell { text-align: right !important; background: #f8fafc !important; font-weight: 600; min-width: 140px; padding: 10px 12px !important; }
+  .agent-cell .agent-role { display: block; font-size: 11px; color: var(--muted); font-weight: normal; margin-top: 2px; }
+  .agent-cell.service { border-right: 3px solid var(--service); }
+  .agent-cell.sales { border-right: 3px solid var(--sales); }
+  .agent-cell.offline { border-right: 3px solid var(--offline); }
+
+  .day-cell { min-width: 110px; min-height: 60px; padding: 4px !important; position: relative; }
+  .day-cell.empty { background: #fafafa; }
+  .day-cell.today-col { background: #fffbeb; }
+  .day-cell.absent-day { background: repeating-linear-gradient(135deg, #fff5f5, #fff5f5 6px, #fff 6px, #fff 12px); }
+  .day-cell.holiday-col { background: repeating-linear-gradient(135deg, #f3f4f6, #f3f4f6 5px, #e5e7eb 5px, #e5e7eb 10px) !important; opacity: .75; }
+  .day-cell.eve-col { background: #fff7ed; }
+
+  /* Day-type header badges */
+  .day-header.dtype-holiday { background: #f3f4f6 !important; color: var(--muted) !important; }
+  .day-header.dtype-eve     { background: #fff7ed !important; color: #c2410c !important; }
+  .day-header.dtype-friday  { background: #fef3c7 !important; color: var(--warning) !important; }
+  .day-type-badge {
+    display: inline-block; margin-top: 3px; padding: 1px 7px;
+    border-radius: 8px; font-size: 10px; font-weight: 600;
+    cursor: pointer; user-select: none; white-space: nowrap;
+  }
+  .day-type-badge.holiday { background: #f3f4f6; color: var(--muted); border: 1px solid var(--border); }
+  .day-type-badge.eve     { background: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
+  .day-type-badge.friday  { background: #fef3c7; color: var(--warning); border: 1px solid #fcd34d; cursor: default; }
+  .day-type-badge.set-btn { background: none; color: #d1d5db; border: 1px dashed #e5e7eb; font-weight: 400; }
+  .day-type-badge.set-btn:hover { border-color: #9ca3af; color: var(--muted); }
+
+  /* ── SHIFT CHIP ── */
+  .shift-chip { display: block; padding: 5px 8px; border-radius: 6px; font-size: 12px; margin: 2px 0; font-weight: 600; cursor: pointer; text-align: center; border: 1px solid transparent; transition: all .1s; user-select: none; }
+  .shift-chip:hover { filter: brightness(.93); transform: scale(1.02); }
+  .shift-chip.service { background: var(--service-bg); color: var(--service); border-color: rgba(59,130,246,.3); }
+  .shift-chip.sales { background: var(--sales-bg); color: var(--sales); border-color: rgba(22,163,74,.3); }
+  .shift-chip.offline { background: var(--offline-bg); color: var(--offline); border-color: rgba(107,114,128,.3); }
+  .shift-chip .role-tag { font-size: 10px; opacity: .7; display: block; margin-top: 1px; font-weight: normal; }
+
+  /* ── ABSENCE CHIP ── */
+  .absence-chip { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px; border-radius: 6px; font-size: 12px; margin: 2px 0; font-weight: 600; border: 1px solid transparent; cursor: pointer; user-select: none; }
+  .absence-chip:hover { filter: brightness(.93); }
+  .absence-chip.sick      { background: #fee2e2; color: var(--danger); border-color: rgba(220,38,38,.25); }
+  .absence-chip.vacation  { background: #dbeafe; color: #1e40af; border-color: rgba(37,99,235,.25); }
+  .absence-chip.holiday   { background: #ede9fe; color: #5b21b6; border-color: rgba(124,58,237,.25); }
+  .absence-chip.personal  { background: #f3f4f6; color: #374151; border-color: rgba(107,114,128,.25); }
+  .absence-chip.other     { background: #f9fafb; color: var(--muted); border-color: var(--border); }
+  .absence-chip .ab-icon  { margin-left: 4px; font-size: 13px; }
+  .absence-chip .ab-note  { font-size: 10px; font-weight: normal; display: block; opacity: .75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 90px; }
+
+  .cell-actions { display: flex; gap: 3px; margin-top: 3px; flex-wrap: wrap; }
+  .add-shift-btn, .add-absence-btn {
+    flex: 1;
+    padding: 3px 4px;
+    background: white;
+    border: 1px dashed #cbd5e1;
+    border-radius: 5px;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    cursor: pointer;
+  }
+  .add-shift-btn:hover { background: #f1f5f9; border-color: var(--primary); color: var(--primary); }
+  .add-absence-btn:hover { background: #fff5f5; border-color: var(--danger); color: var(--danger); }
+
+  /* ── COVERAGE ── */
+  .coverage-section { margin-top: 20px; }
+  .coverage-strip { margin-bottom: 14px; }
+  .coverage-title { font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .coverage-title .dot { width: 12px; height: 12px; border-radius: 3px; }
+  .coverage-title .dot.service { background: var(--service); }
+  .coverage-title .dot.sales { background: var(--sales); }
+  .coverage-title .dot.offline { background: var(--offline); }
+  .coverage-table-wrap { overflow-x: auto; }
+  .coverage-table { border-collapse: collapse; font-size: 10px; }
+  .coverage-table th, .coverage-table td { border: 1px solid #e5e7eb; padding: 2px; text-align: center; min-width: 22px; height: 22px; }
+  .coverage-table th { background: #f8fafc; font-weight: 500; color: var(--muted); padding: 4px 6px; }
+  .coverage-table .day-name { min-width: 80px; text-align: right; padding-right: 6px; font-size: 11px; }
+  /* standards-based coverage colors */
+  .coverage-cell.c-ok    { background: #d1fae5; color: #065f46; font-weight: 700; }  /* exact match */
+  .coverage-cell.c-warn  { background: #fef9c3; color: #854d0e; }                   /* ±1 deviation */
+  .coverage-cell.c-bad   { background: #fee2e2; color: var(--danger); font-weight: 700; } /* ±2+ deviation */
+  .coverage-cell.c-info  { background: #f0f9ff; color: #0369a1; }                   /* std=0, count>0 */
+  .coverage-cell.c-zero  { background: #f9fafb; color: #d1d5db; }                   /* std=0, count=0 */
+  .coverage-cell.absent  { background: #fee2e2; }
+
+  /* standards per-slot tables */
+  .std-strip { margin-bottom: 18px; }
+  .std-strip-title { font-weight: 600; font-size: 13px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .std-table-wrap { overflow-x: auto; }
+  .std-table { border-collapse: collapse; font-size: 12px; }
+  .std-table th, .std-table td { border: 1px solid var(--border); padding: 1px 2px; text-align: center; }
+  .std-table th { background: #f8fafc; font-weight: 600; color: var(--muted); font-size: 11px; white-space: nowrap; }
+  .std-day-col { text-align: right !important; font-weight: 600; white-space: nowrap; padding: 3px 8px !important; min-width: 58px; font-size: 12px; }
+  .std-day-col.fri { background: #fef3c7; }
+  .std-day-col.sat { background: #f3f4f6; color: var(--muted); }
+  .std-input {
+    width: 26px; padding: 2px 1px; text-align: center;
+    border: none; background: transparent;
+    font-size: 12px; font-weight: 600; color: var(--text);
+  }
+  .std-input:focus { outline: none; background: #eff6ff; border-radius: 3px; }
+  .std-input[value="0"] { color: #d1d5db; }
+  .coverage-legend {
+    display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px;
+    color: var(--muted); margin-bottom: 10px; align-items: center;
+  }
+  .coverage-legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .cleg { display: inline-block; width: 14px; height: 14px; border-radius: 3px; }
+
+  /* ── AGENTS / TEMPLATES ── */
+  .agent-list, .template-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+  .agent-item, .template-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border); gap: 8px; }
+  .agent-item .name, .template-item .name { font-weight: 500; }
+  .role-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; display: inline-block; }
+  .role-badge.service { background: var(--service-bg); color: var(--service); }
+  .role-badge.sales { background: var(--sales-bg); color: var(--sales); }
+  .role-badge.offline { background: var(--offline-bg); color: var(--offline); }
+  .role-badge.any { background: #e0e7ff; color: #4338ca; }
+  .template-item .times { font-size: 12px; color: var(--muted); font-family: monospace; display: block; margin-top: 2px; }
+  .item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .icon-btn { background: none; border: none; padding: 4px; border-radius: 4px; color: var(--muted); font-size: 14px; cursor: pointer; }
+  .icon-btn:hover { background: rgba(0,0,0,.05); color: var(--text); }
+  .icon-btn.danger:hover { color: var(--danger); }
+
+  /* ── TODAY VIEW ── */
+  .today-card { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 24px; border-radius: 12px; margin-bottom: 16px; }
+  .today-card h2 { color: white; margin: 0 0 8px; font-size: 22px; }
+  .today-card .date { opacity: .9; font-size: 14px; }
+  .now-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 16px; }
+  .now-group { background: rgba(255,255,255,.15); backdrop-filter: blur(10px); padding: 14px; border-radius: 10px; }
+  .now-group .role-name { font-weight: 600; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .now-group .agent-line { font-size: 13px; padding: 3px 0; display: flex; justify-content: space-between; gap: 8px; }
+  .now-group .until { opacity: .85; font-size: 12px; font-family: monospace; }
+  .now-group .empty-text { opacity: .7; font-style: italic; font-size: 12px; }
+
+  .absent-group { background: rgba(220,38,38,.2); }
+
+  .day-list { display: flex; flex-direction: column; gap: 4px; }
+  .day-list-item { display: grid; grid-template-columns: 120px 140px 1fr; gap: 10px; padding: 10px 12px; background: #f8fafc; border-radius: 8px; border-right: 4px solid transparent; align-items: center; }
+  .day-list-item.service { border-right-color: var(--service); }
+  .day-list-item.sales { border-right-color: var(--sales); }
+  .day-list-item.offline { border-right-color: var(--offline); }
+  .day-list-item.absent { border-right-color: var(--danger); background: #fff5f5; }
+  .day-list-item .time { font-family: monospace; font-weight: 600; }
+
+  /* ── SUMMARY ── */
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+  .summary-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border); }
+  .summary-item .hours { font-weight: 700; color: var(--primary-dark); font-size: 16px; }
+  .summary-item .hours-label { font-size: 11px; color: var(--muted); font-weight: normal; }
+  .summary-item .abs-badges { margin-top: 4px; display: flex; gap: 3px; flex-wrap: wrap; }
+  .abs-mini { font-size: 10px; padding: 1px 5px; border-radius: 8px; }
+  .abs-mini.sick { background: #fee2e2; color: var(--danger); }
+  .abs-mini.vacation { background: #dbeafe; color: #1e40af; }
+  .abs-mini.holiday { background: #ede9fe; color: #5b21b6; }
+  .abs-mini.personal, .abs-mini.other { background: #f3f4f6; color: var(--muted); }
+
+  /* ── MODAL ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: white; border-radius: 12px; padding: 20px; max-width: 460px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+  .modal h3 { margin: 0 0 16px; color: var(--primary-dark); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-start; margin-top: 16px; flex-wrap: wrap; }
+  .modal-actions .spacer { flex: 1; }
+  .form-row { margin-bottom: 12px; }
+  .form-row-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .warning-box { background: var(--warning-bg); color: var(--warning); padding: 10px 12px; border-radius: 8px; font-size: 13px; border: 1px solid rgba(217,119,6,.2); margin-bottom: 12px; }
+  .warning-box ul { margin: 4px 0 0; padding-right: 18px; }
+  .info-box { background: #f0f9ff; color: #0369a1; padding: 10px 12px; border-radius: 8px; font-size: 13px; border: 1px solid rgba(3,105,161,.2); margin-bottom: 12px; }
+
+  /* ── TOAST ── */
+  .toast { position: fixed; bottom: 20px; right: 50%; transform: translateX(50%); background: var(--text); color: white; padding: 10px 18px; border-radius: 8px; box-shadow: var(--shadow-lg); z-index: 2000; opacity: 0; transition: opacity .25s; font-size: 14px; max-width: 90vw; text-align: center; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .toast.success { background: var(--success); }
+  .toast.danger { background: var(--danger); }
+
+  /* ── FILTERS ── */
+  .filter-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px; background: #f8fafc; border-radius: 8px; }
+  .filter-bar label { margin: 0; white-space: nowrap; }
+  .filter-bar select { width: auto; min-width: 160px; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .legend-dot.service { background: var(--service); }
+  .legend-dot.sales { background: var(--sales); }
+  .legend-dot.offline { background: var(--offline); }
+
+  .empty-state { text-align: center; padding: 32px 16px; color: var(--muted); }
+  .empty-state .icon { font-size: 36px; margin-bottom: 8px; }
+
+  /* ── PUBLIC VIEW ── */
+  #public-view { display: none; }
+  #public-view.active { display: block; min-height: 100vh; }
+  .public-header { background: white; border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; box-shadow: var(--shadow); }
+  .public-header svg { height: 28px; width: auto; }
+  .public-title { font-weight: 600; color: var(--primary-dark); font-size: 16px; }
+  .public-main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+  .public-hero { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; padding: 20px 24px; border-radius: 12px; margin-bottom: 16px; }
+  .public-hero h2 { margin: 0 0 4px; font-size: 20px; }
+  .public-hero .sub { opacity: .85; font-size: 13px; }
+  .public-filter-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd; margin-bottom: 16px; font-size: 14px; }
+  .public-filter-bar label { color: #0369a1; font-weight: 600; margin: 0; }
+  .public-filter-bar select { width: auto; min-width: 180px; border-color: #7dd3fc; }
+  .public-filter-bar select:focus { border-color: var(--primary); }
+  .public-notice { font-size: 12px; color: var(--muted); text-align: center; padding: 8px; }
+
+  /* ── MOBILE ── */
+  @media (max-width: 768px) {
+    header { padding: 10px; flex-direction: column; align-items: stretch; }
+    .header-logo { justify-content: center; }
+    .tabs { width: 100%; justify-content: space-between; }
+    .tab { flex: 1; padding: 7px 4px; font-size: 12px; }
+    main { padding: 10px; }
+    .card { padding: 14px; border-radius: 8px; }
+    .toolbar { gap: 8px; }
+    .week-label { min-width: 0; font-size: 13px; }
+    .btn { padding: 7px 10px; font-size: 13px; }
+    .day-cell { min-width: 95px; }
+    .shift-chip { font-size: 11px; padding: 3px 5px; }
+    .absence-chip { font-size: 11px; padding: 3px 6px; }
+    .day-list-item { grid-template-columns: 100px 1fr; }
+    .day-list-item .role { grid-column: 1/-1; font-size: 12px; }
+    .public-main { padding: 10px; }
+    .public-filter-bar select { min-width: 140px; }
+  }
+
+  /* ── PRINT ── */
+  @media print {
+    @page { size: landscape; margin: 1cm; }
+    body { background: white; }
+    header, .toolbar, .filter-bar, .no-print, .cell-actions, #public-view .public-filter-bar { display: none !important; }
+    main { padding: 0; max-width: none; }
+    .card { box-shadow: none; padding: 0; margin-bottom: 12px; border: none; }
+    .view { display: block !important; }
+    .view:not(.active) { display: none !important; }
+    .schedule { font-size: 11px; }
+    .schedule th, .schedule td { padding: 4px; border: 1px solid #999; }
+    .shift-chip, .absence-chip { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .coverage-cell { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== ADMIN MODE ===== -->
+<header class="no-print" id="admin-header">
+  <div class="header-logo">
+    <svg width="144" height="31" viewBox="0 0 144 31" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10.9892 24.1372V12.845C10.9892 12.0922 10.8155 11.5614 10.4681 11.2525C10.1399 10.9244 9.66698 10.7603 9.04929 10.7603H3.66379V7.60429H10.1785C11.1437 7.60429 12.0026 7.78766 12.7554 8.15442C13.5083 8.52117 14.097 9.10026 14.5217 9.89168C14.9656 10.6831 15.1876 11.7351 15.1876 13.0477V24.1372H10.9892ZM1.89758 24.1372V21.0101H13.682L13.5951 24.1372H1.89758ZM1 24.1372V7.60429H5.19837V24.1372H1Z" fill="#292B39"/>
+      <path d="M17.4112 25.2664L16.8321 21.9946L23.5785 20.7206C24.5243 20.5469 25.2771 20.2573 25.8369 19.8519C26.416 19.4273 26.8503 18.8772 27.1398 18.2016C27.4294 17.5067 27.6321 16.667 27.7479 15.6825C27.8637 14.6788 27.9216 13.511 27.9216 12.1791C27.9409 10.8472 27.9506 9.32224 27.9506 7.60429H32.091C32.091 9.49597 32.0524 11.2236 31.9752 12.7871C31.9173 14.3313 31.7532 15.7308 31.483 16.9855C31.232 18.2209 30.8074 19.3115 30.209 20.2573C29.6106 21.1838 28.7806 21.9656 27.7189 22.6026C26.6573 23.2396 25.2964 23.7222 23.6364 24.0503L17.4112 25.2664ZM21.5517 21.5313L18.1061 7.60429H22.3045L25.5474 21.5313H21.5517Z" fill="#292B39"/>
+      <path d="M35.0493 24.1372V10.9919L34.7308 7.60429H38.9003L39.2477 10.9919V24.1372H35.0493Z" fill="#292B39"/>
+      <path d="M41.9054 24.1372V21.0101H46.1617V12.6423C46.1617 11.9088 46.0169 11.4069 45.7274 11.1367C45.4571 10.8472 45.0711 10.6734 44.5692 10.6155L42.5424 10.3549L43.0636 7.25684L46.6828 7.7201C47.8796 7.87453 48.7869 8.38605 49.4045 9.25468C50.0222 10.104 50.3311 11.1946 50.3311 12.5265V24.1372H41.9054Z" fill="#292B39"/>
+      <path d="M59.3664 29.928V10.9919L59.0479 7.60429H63.2173L63.5648 10.9919V29.928H59.3664Z" fill="#292B39"/>
+      <path d="M66.8595 24.1372V10.9919L66.541 7.60429H70.7104L71.0578 10.9919V24.1372H66.8595Z" fill="#292B39"/>
+      <path d="M73.4549 24.1372V21.0101H78.0876C78.8597 21.0101 79.4871 20.8364 79.9696 20.4889C80.4522 20.1415 80.7997 19.6589 81.012 19.0412C81.2436 18.4235 81.3594 17.7286 81.3594 16.9565V14.7849C81.3594 14.0128 81.2436 13.3276 81.012 12.7292C80.7997 12.1115 80.4522 11.6289 79.9696 11.2815C79.4871 10.934 78.8597 10.7603 78.0876 10.7603H73.4549V7.60429H79.2168C80.6259 7.60429 81.7938 7.91313 82.7203 8.53082C83.6661 9.14851 84.3707 10.0171 84.834 11.1367C85.3165 12.237 85.5578 13.5303 85.5578 15.0166V16.7249C85.5578 18.2305 85.3165 19.5431 84.834 20.6627C84.3707 21.7629 83.6661 22.6219 82.7203 23.2396C81.7938 23.838 80.6259 24.1372 79.2168 24.1372H73.4549Z" fill="#292B39"/>
+      <path d="M94.3411 24.1661L94.7176 21.0391C96.146 21.3479 97.2559 21.3383 98.0473 21.0101C98.8387 20.6627 99.3888 20.0353 99.6977 19.1281C100.026 18.2209 100.18 17.0916 100.161 15.7404C100.142 14.5244 100.007 13.5399 99.7556 12.7871C99.5047 12.0343 99.1476 11.4938 98.6843 11.1657C98.221 10.8182 97.6323 10.6445 96.9181 10.6445C96.3969 10.6445 95.924 10.7507 95.4993 10.963C95.0746 11.1753 94.7272 11.4842 94.457 11.8895C94.1867 12.2949 94.013 12.7775 93.9358 13.3372L92.9803 11.5421C93.3663 10.0751 93.9937 9.01339 94.8623 8.3571C95.7503 7.6815 96.7251 7.3437 97.7867 7.3437C98.8098 7.3437 99.7073 7.51742 100.479 7.86487C101.271 8.19302 101.937 8.70455 102.477 9.39945C103.018 10.0944 103.423 10.9726 103.693 12.0343C103.983 13.0959 104.128 14.3313 104.128 15.7404C104.147 17.8638 103.771 19.6396 102.998 21.068C102.246 22.4964 101.136 23.5002 99.6687 24.0793C98.2017 24.6391 96.4258 24.668 94.3411 24.1661ZM87.9712 24.1372L89.998 12.9898L87.6817 7.60429H92.0248L93.9647 13.1925L92.1696 24.1372H87.9712Z" fill="#292B39"/>
+      <path d="M115.827 8.68096L110.549 13.959L113.1 16.51L118.378 11.232L115.827 8.68096Z" fill="#B14373"/>
+      <path d="M119.259 12.1111L113.981 17.3892L116.532 19.9402L121.81 14.6622L119.259 12.1111Z" fill="#677C50"/>
+      <path d="M137.918 0.0675624L117.289 20.6973L119.84 23.2483L140.469 2.61861L137.918 0.0675624Z" fill="#247BAE"/>
+      <path d="M141.366 3.51433L120.736 24.144L123.287 26.6951L143.917 6.06538L141.366 3.51433Z" fill="#7E6AAD"/>
+    </svg>
+    <span class="header-title">ניהול משמרות</span>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-view="today">היום שלי</button>
+    <button class="tab" data-view="schedule">לו"ז שבועי</button>
+    <button class="tab" data-view="monthly">חודשי</button>
+    <button class="tab" data-view="agents">נציגים ותבניות</button>
+  </div>
+</header>
+
+<main id="admin-main">
+
+  <!-- TODAY -->
+  <div class="view active" id="view-today">
+    <div class="today-card">
+      <h2 id="today-title">היום במוקד</h2>
+      <div class="date" id="today-date"></div>
+      <div class="now-groups" id="now-groups"></div>
+    </div>
+    <div class="card">
+      <h2>לו"ז מלא של היום</h2>
+      <div class="filter-bar">
+        <label>סנן לפי נציג:</label>
+        <select id="today-agent-filter"><option value="">כל הנציגים</option></select>
+      </div>
+      <div id="today-full-schedule"></div>
+    </div>
+  </div>
+
+  <!-- WEEKLY -->
+  <div class="view" id="view-schedule">
+    <div class="card">
+      <div class="toolbar">
+        <div class="week-nav">
+          <button class="btn" id="prev-week">‹ שבוע קודם</button>
+          <span class="week-label" id="week-label"></span>
+          <button class="btn" id="next-week">שבוע הבא ›</button>
+          <button class="btn btn-sm" id="today-week">השבוע</button>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn" id="clone-week">📋 שכפל מהשבוע הקודם</button>
+        <button class="btn" id="clear-week">🗑 נקה שבוע</button>
+        <button class="btn btn-purple" id="share-agents-link">📤 שתף לנציגים</button>
+        <button class="btn btn-primary" id="export-pdf">🖨 PDF</button>
+      </div>
+      <div class="filter-bar">
+        <label>סנן לפי נציג:</label>
+        <select id="week-agent-filter"><option value="">כל הנציגים</option></select>
+        <div class="spacer"></div>
+        <div class="legend">
+          <div class="legend-item"><span class="legend-dot service"></span>שירות</div>
+          <div class="legend-item"><span class="legend-dot sales"></span>מכירות</div>
+          <div class="legend-item"><span class="legend-dot offline"></span>אופליין</div>
+        </div>
+      </div>
+      <div class="schedule-wrapper">
+        <table class="schedule" id="weekly-schedule"></table>
+      </div>
+      <div class="coverage-section">
+        <h2>🎯 כיסוי תפקידים</h2>
+        <div class="coverage-legend">
+          <span><span class="cleg" style="background:#d1fae5;border:1px solid #6ee7b7;"></span>עמידה בתקן</span>
+          <span><span class="cleg" style="background:#fef9c3;border:1px solid #fcd34d;"></span>חריגה ±1</span>
+          <span><span class="cleg" style="background:#fee2e2;border:1px solid #fca5a5;"></span>חריגה ±2+</span>
+          <span><span class="cleg" style="background:#f0f9ff;border:1px solid #7dd3fc;"></span>ללא תקן</span>
+          <span><span class="cleg" style="background:#f3f4f6;border:1px solid #e5e7eb;"></span>לא פעיל</span>
+          <span style="margin-right:8px;"><a href="#" style="color:var(--primary);font-size:12px;" onclick="switchView('agents');return false;">⚙ ערוך תקנים</a></span>
+        </div>
+        <div id="coverage-container"></div>
+      </div>
+    </div>
+    <div class="card no-print">
+      <h2>📊 סיכום שעות שבועי</h2>
+      <div class="summary-grid" id="hours-summary"></div>
+    </div>
+  </div>
+
+  <!-- MONTHLY -->
+  <div class="view" id="view-monthly">
+    <div class="card">
+      <div class="toolbar">
+        <div class="week-nav">
+          <button class="btn" id="prev-month">‹ חודש קודם</button>
+          <span class="week-label" id="month-label"></span>
+          <button class="btn" id="next-month">חודש הבא ›</button>
+        </div>
+        <div class="spacer"></div>
+        <label style="margin:0">סנן:</label>
+        <select id="month-agent-filter" style="width:auto;min-width:150px"><option value="">כל הנציגים</option></select>
+      </div>
+      <div class="schedule-wrapper"><div id="monthly-grid"></div></div>
+    </div>
+  </div>
+
+  <!-- AGENTS & TEMPLATES -->
+  <div class="view" id="view-agents">
+    <div class="card">
+      <h2>👥 ניהול נציגים</h2>
+      <div class="toolbar">
+        <button class="btn btn-primary" id="add-agent-btn">➕ הוסף נציג</button>
+      </div>
+      <div class="agent-list" id="agents-list"></div>
+    </div>
+    <div class="card">
+      <h2>⏱ תבניות משמרת</h2>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">שיבוץ מהיר: לחיצה על תבנית ממלאת שעות + תפקיד אוטומטית.</div>
+      <div class="toolbar">
+        <button class="btn btn-primary" id="add-template-btn">➕ הוסף תבנית</button>
+      </div>
+      <div class="template-list" id="templates-list"></div>
+    </div>
+    <div class="card">
+      <h2>🎯 תקן כיסוי לפי יום ושעה</h2>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+        הגדר כמה נציגים נדרשים לכל תפקיד, לפי יום ושעה. <strong>0 = אין דרישה</strong> (ללא צביעה).
+        סטייה של ±1 = צהוב • סטייה של ±2 ומעלה = אדום • עמידה בתקן = ירוק.
+      </div>
+      <div id="standards-container"></div>
+      <div style="margin-top:6px;font-size:12px;color:var(--muted);">השינויים נשמרים אוטומטית.</div>
+    </div>
+
+    <div class="card">
+      <h2>ℹ️ הגדרות מערכת</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">
+        <div><strong style="color:var(--service)">שירות לקוחות</strong><div style="color:var(--muted);font-size:13px;margin-top:4px;">08:00 - 20:00</div></div>
+        <div><strong style="color:var(--sales)">מכירות</strong><div style="color:var(--muted);font-size:13px;margin-top:4px;">08:00 - 20:00</div></div>
+        <div><strong style="color:var(--offline)">אופליין</strong><div style="color:var(--muted);font-size:13px;margin-top:4px;">08:00 - 17:00</div></div>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-danger btn-sm" id="reset-data">⚠ אפס את כל הנתונים</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ===== PUBLIC / READ-ONLY VIEW ===== -->
+<div id="public-view">
+  <div class="public-header">
+    <svg width="144" height="31" viewBox="0 0 144 31" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10.9892 24.1372V12.845C10.9892 12.0922 10.8155 11.5614 10.4681 11.2525C10.1399 10.9244 9.66698 10.7603 9.04929 10.7603H3.66379V7.60429H10.1785C11.1437 7.60429 12.0026 7.78766 12.7554 8.15442C13.5083 8.52117 14.097 9.10026 14.5217 9.89168C14.9656 10.6831 15.1876 11.7351 15.1876 13.0477V24.1372H10.9892ZM1.89758 24.1372V21.0101H13.682L13.5951 24.1372H1.89758ZM1 24.1372V7.60429H5.19837V24.1372H1Z" fill="#292B39"/>
+      <path d="M17.4112 25.2664L16.8321 21.9946L23.5785 20.7206C24.5243 20.5469 25.2771 20.2573 25.8369 19.8519C26.416 19.4273 26.8503 18.8772 27.1398 18.2016C27.4294 17.5067 27.6321 16.667 27.7479 15.6825C27.8637 14.6788 27.9216 13.511 27.9216 12.1791C27.9409 10.8472 27.9506 9.32224 27.9506 7.60429H32.091C32.091 9.49597 32.0524 11.2236 31.9752 12.7871C31.9173 14.3313 31.7532 15.7308 31.483 16.9855C31.232 18.2209 30.8074 19.3115 30.209 20.2573C29.6106 21.1838 28.7806 21.9656 27.7189 22.6026C26.6573 23.2396 25.2964 23.7222 23.6364 24.0503L17.4112 25.2664ZM21.5517 21.5313L18.1061 7.60429H22.3045L25.5474 21.5313H21.5517Z" fill="#292B39"/>
+      <path d="M35.0493 24.1372V10.9919L34.7308 7.60429H38.9003L39.2477 10.9919V24.1372H35.0493Z" fill="#292B39"/>
+      <path d="M41.9054 24.1372V21.0101H46.1617V12.6423C46.1617 11.9088 46.0169 11.4069 45.7274 11.1367C45.4571 10.8472 45.0711 10.6734 44.5692 10.6155L42.5424 10.3549L43.0636 7.25684L46.6828 7.7201C47.8796 7.87453 48.7869 8.38605 49.4045 9.25468C50.0222 10.104 50.3311 11.1946 50.3311 12.5265V24.1372H41.9054Z" fill="#292B39"/>
+      <path d="M59.3664 29.928V10.9919L59.0479 7.60429H63.2173L63.5648 10.9919V29.928H59.3664Z" fill="#292B39"/>
+      <path d="M66.8595 24.1372V10.9919L66.541 7.60429H70.7104L71.0578 10.9919V24.1372H66.8595Z" fill="#292B39"/>
+      <path d="M73.4549 24.1372V21.0101H78.0876C78.8597 21.0101 79.4871 20.8364 79.9696 20.4889C80.4522 20.1415 80.7997 19.6589 81.012 19.0412C81.2436 18.4235 81.3594 17.7286 81.3594 16.9565V14.7849C81.3594 14.0128 81.2436 13.3276 81.012 12.7292C80.7997 12.1115 80.4522 11.6289 79.9696 11.2815C79.4871 10.934 78.8597 10.7603 78.0876 10.7603H73.4549V7.60429H79.2168C80.6259 7.60429 81.7938 7.91313 82.7203 8.53082C83.6661 9.14851 84.3707 10.0171 84.834 11.1367C85.3165 12.237 85.5578 13.5303 85.5578 15.0166V16.7249C85.5578 18.2305 85.3165 19.5431 84.834 20.6627C84.3707 21.7629 83.6661 22.6219 82.7203 23.2396C81.7938 23.838 80.6259 24.1372 79.2168 24.1372H73.4549Z" fill="#292B39"/>
+      <path d="M94.3411 24.1661L94.7176 21.0391C96.146 21.3479 97.2559 21.3383 98.0473 21.0101C98.8387 20.6627 99.3888 20.0353 99.6977 19.1281C100.026 18.2209 100.18 17.0916 100.161 15.7404C100.142 14.5244 100.007 13.5399 99.7556 12.7871C99.5047 12.0343 99.1476 11.4938 98.6843 11.1657C98.221 10.8182 97.6323 10.6445 96.9181 10.6445C96.3969 10.6445 95.924 10.7507 95.4993 10.963C95.0746 11.1753 94.7272 11.4842 94.457 11.8895C94.1867 12.2949 94.013 12.7775 93.9358 13.3372L92.9803 11.5421C93.3663 10.0751 93.9937 9.01339 94.8623 8.3571C95.7503 7.6815 96.7251 7.3437 97.7867 7.3437C98.8098 7.3437 99.7073 7.51742 100.479 7.86487C101.271 8.19302 101.937 8.70455 102.477 9.39945C103.018 10.0944 103.423 10.9726 103.693 12.0343C103.983 13.0959 104.128 14.3313 104.128 15.7404C104.147 17.8638 103.771 19.6396 102.998 21.068C102.246 22.4964 101.136 23.5002 99.6687 24.0793C98.2017 24.6391 96.4258 24.668 94.3411 24.1661ZM87.9712 24.1372L89.998 12.9898L87.6817 7.60429H92.0248L93.9647 13.1925L92.1696 24.1372H87.9712Z" fill="#292B39"/>
+      <path d="M115.827 8.68096L110.549 13.959L113.1 16.51L118.378 11.232L115.827 8.68096Z" fill="#B14373"/>
+      <path d="M119.259 12.1111L113.981 17.3892L116.532 19.9402L121.81 14.6622L119.259 12.1111Z" fill="#677C50"/>
+      <path d="M137.918 0.0675624L117.289 20.6973L119.84 23.2483L140.469 2.61861L137.918 0.0675624Z" fill="#247BAE"/>
+      <path d="M141.366 3.51433L120.736 24.144L123.287 26.6951L143.917 6.06538L141.366 3.51433Z" fill="#7E6AAD"/>
+    </svg>
+    <span class="public-title">לו"ז שבועי</span>
+    <div class="week-nav no-print" id="public-week-nav">
+      <button class="btn btn-sm" id="pub-prev-week">‹</button>
+      <span class="week-label" id="pub-week-label" style="min-width:160px;font-size:13px;"></span>
+      <button class="btn btn-sm" id="pub-next-week">›</button>
+    </div>
+  </div>
+  <div class="public-main">
+    <div class="public-hero">
+      <h2 id="pub-today-title">היום במוקד</h2>
+      <div class="sub" id="pub-today-date"></div>
+      <div class="now-groups" id="pub-now-groups" style="margin-top:14px;"></div>
+    </div>
+    <div class="public-filter-bar no-print">
+      <label>👤 בחר/י את שמך לצפייה במשמרות שלך:</label>
+      <select id="pub-agent-filter"><option value="">כל הנציגים</option></select>
+    </div>
+    <div style="background:white;border-radius:12px;box-shadow:var(--shadow);padding:16px;margin-bottom:12px;">
+      <div class="schedule-wrapper">
+        <table class="schedule" id="pub-weekly-schedule"></table>
+      </div>
+    </div>
+    <div class="public-notice" id="pub-notice"></div>
+  </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Agent modal -->
+<div class="modal-overlay" id="modal-agent">
+  <div class="modal">
+    <h3 id="modal-agent-title">הוסף נציג</h3>
+    <div class="form-row"><label>שם הנציג</label><input type="text" id="agent-name-input" placeholder="לדוגמה: דניאל כהן"></div>
+    <div class="form-row"><label>תפקיד ברירת מחדל</label>
+      <select id="agent-role-input">
+        <option value="service">שירות לקוחות</option>
+        <option value="sales">מכירות</option>
+        <option value="offline">אופליין</option>
+      </select>
+    </div>
+    <div class="form-row"><label>תבנית ברירת מחדל (אופציונלי)</label><select id="agent-default-template"></select></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="modal-agent-save">שמור</button>
+      <button class="btn" data-close-modal>ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- Template modal -->
+<div class="modal-overlay" id="modal-template">
+  <div class="modal">
+    <h3 id="modal-template-title">הוסף תבנית</h3>
+    <div class="form-row"><label>שם התבנית</label><input type="text" id="template-name-input" placeholder="לדוגמה: משרת אם"></div>
+    <div class="form-row"><label>תפקיד (אופציונלי)</label>
+      <select id="template-role-input">
+        <option value="">כל תפקיד</option>
+        <option value="service">שירות לקוחות</option>
+        <option value="sales">מכירות</option>
+        <option value="offline">אופליין</option>
+      </select>
+    </div>
+    <div class="form-row-split">
+      <div><label>שעת התחלה</label><select id="template-start-input"></select></div>
+      <div><label>שעת סיום</label><select id="template-end-input"></select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="modal-template-save">שמור</button>
+      <button class="btn" data-close-modal>ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- Shift modal -->
+<div class="modal-overlay" id="modal-shift">
+  <div class="modal">
+    <h3 id="modal-shift-title">הוספת שיבוץ</h3>
+    <div class="form-row" id="modal-shift-info" style="color:var(--muted);font-size:13px;"></div>
+    <div class="form-row">
+      <label>תבנית מהירה</label>
+      <select id="shift-template-picker"></select>
+    </div>
+    <div class="form-row"><label>נציג</label><select id="shift-agent-input"></select></div>
+    <div class="form-row"><label>תפקיד</label>
+      <select id="shift-role-input">
+        <option value="service">שירות לקוחות</option>
+        <option value="sales">מכירות</option>
+        <option value="offline">אופליין</option>
+      </select>
+    </div>
+    <div class="form-row-split">
+      <div><label>שעת התחלה</label><select id="shift-start-input"></select></div>
+      <div><label>שעת סיום</label><select id="shift-end-input"></select></div>
+    </div>
+    <div id="shift-warnings"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="modal-shift-save">שמור</button>
+      <button class="btn" data-close-modal>ביטול</button>
+      <div class="spacer"></div>
+      <button class="btn btn-danger" id="modal-shift-delete" style="display:none">🗑 מחק</button>
+    </div>
+  </div>
+</div>
+
+<!-- Absence modal -->
+<div class="modal-overlay" id="modal-absence">
+  <div class="modal">
+    <h3 id="modal-absence-title">רישום היעדרות</h3>
+    <div class="form-row" id="modal-absence-info" style="color:var(--muted);font-size:13px;"></div>
+    <div class="form-row"><label>נציג</label><select id="absence-agent-input"></select></div>
+    <div class="form-row"><label>סיבת היעדרות</label>
+      <select id="absence-reason-input">
+        <option value="sick">🤒 מחלה</option>
+        <option value="vacation">🏖️ חופשה</option>
+        <option value="holiday">✡️ חג / ימי השלמה</option>
+        <option value="personal">🏠 אישי</option>
+        <option value="other">📋 אחר</option>
+      </select>
+    </div>
+    <div class="form-row"><label>הערה (אופציונלי)</label><textarea id="absence-note-input" placeholder="פרטים נוספים..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="modal-absence-save">שמור</button>
+      <button class="btn" data-close-modal>ביטול</button>
+      <div class="spacer"></div>
+      <button class="btn btn-danger" id="modal-absence-delete" style="display:none">🗑 מחק היעדרות</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   Shift Management App v3 - absences + public view + logo
+   ============================================================ */
+
+const ROLES = {
+  service: { label: 'שירות לקוחות', color: 'service', start: 8, end: 20 },
+  sales:   { label: 'מכירות',       color: 'sales',   start: 8, end: 20 },
+  offline: { label: 'אופליין',      color: 'offline', start: 8, end: 17 }
+};
+
+const ABSENCE_REASONS = {
+  sick:     { label: 'מחלה',             icon: '🤒', cls: 'sick' },
+  vacation: { label: 'חופשה',            icon: '🏖️', cls: 'vacation' },
+  holiday:  { label: 'חג / ימי השלמה',  icon: '✡️',  cls: 'holiday' },
+  personal: { label: 'אישי',             icon: '🏠', cls: 'personal' },
+  other:    { label: 'אחר',              icon: '📋', cls: 'other' }
+};
+
+const DAYS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const TIME_MIN = 6, TIME_MAX = 23;
+const STORAGE_KEY = 'shift_manager_v2';
+
+// Detect public / read-only mode
+const PUBLIC_MODE = new URLSearchParams(window.location.search).has('v');
+
+// ===== State =====
+let state, publicWeekStart;
+
+if (PUBLIC_MODE) {
+  // Load from URL hash
+  document.getElementById('admin-header').style.display = 'none';
+  document.getElementById('admin-main').style.display = 'none';
+  document.getElementById('public-view').classList.add('active');
+  try {
+    const raw = decodeURIComponent(window.location.hash.substring(1));
+    state = JSON.parse(decodeURIComponent(escape(atob(raw))));
+    state.absences  = state.absences  || [];
+    state.templates = state.templates || [];
+    state.dayTypes  = state.dayTypes  || {};
+  } catch(e) {
+    document.getElementById('public-view').innerHTML =
+      '<div style="padding:40px;text-align:center;color:#dc2626;font-size:18px;">⚠ הלינק אינו תקין או פג תוקף.<br>בקשי מהמנהלת לשלוח לינק מעודכן.</div>';
+    state = { agents: [], templates: [], shifts: [], absences: [] };
+  }
+  publicWeekStart = getWeekStart(new Date());
+} else {
+  // Admin mode — load from localStorage
+  try { localStorage.removeItem('shift_manager_v1'); } catch(e) {}
+  state = loadAdminState();
+  // Load shared import from hash if present
+  if (window.location.hash.startsWith('#share=')) {
+    try {
+      const decoded = decodeURIComponent(window.location.hash.substring(7));
+      const shared = JSON.parse(decodeURIComponent(escape(atob(decoded))));
+      if (shared && shared.agents && shared.shifts) {
+        if (confirm('זוהה לינק שיתוף. לטעון את הלו"ז? (הנתונים הקיימים יוחלפו)')) {
+          state = { agents: shared.agents, templates: shared.templates || state.templates, shifts: shared.shifts, absences: shared.absences || [] };
+          saveState();
+        }
+        history.replaceState(null, '', window.location.pathname);
+      }
+    } catch(e) {}
+  }
+}
+
+function seedState() {
+  return {
+    agents: [
+      { id: 'a1', name: 'יעל כהן',    role: 'service' },
+      { id: 'a2', name: 'דוד לוי',    role: 'service' },
+      { id: 'a3', name: 'מיכל אברהם', role: 'sales' },
+      { id: 'a4', name: 'אורי גלעד',  role: 'sales' },
+      { id: 'a5', name: 'שרה רוזן',   role: 'offline' }
+    ],
+    templates: [
+      { id: 't1', name: 'משרה מלאה בוקר', start: 8,    end: 16.5 },
+      { id: 't2', name: 'משרה מלאה ערב',  start: 11.5, end: 20 },
+      { id: 't3', name: 'משרת אם',         start: 9,    end: 15 },
+      { id: 't4', name: 'חצי משרה בוקר',  start: 8,    end: 13 },
+      { id: 't5', name: 'חצי משרה ערב',   start: 15,   end: 20 },
+      { id: 't6', name: 'אופליין מלאה',    start: 8,    end: 17, role: 'offline' }
+    ],
+    shifts: [],
+    absences: [],
+    dayTypes: {},
+    standards: Object.fromEntries(Object.entries(ROLES).map(([rid, ri]) => {
+      const n = Math.round((ri.end - ri.start) * 2);
+      return [rid, Array.from({length: 7}, () => new Array(n).fill(0))];
+    }))
+  };
+}
+
+function loadAdminState() {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (data) {
+      const p = JSON.parse(data);
+      if (p.agents && p.shifts) {
+        if (!p.absences)   p.absences  = [];
+        if (!p.templates)  p.templates = [];
+        if (!p.dayTypes)   p.dayTypes  = {};
+        // migrate standards to per-slot format
+        if (!p.standards) p.standards = {};
+        Object.entries(ROLES).forEach(([rid, ri]) => {
+          const n = Math.round((ri.end - ri.start) * 2);
+          const makeDay = () => new Array(n).fill(0);
+          if (!p.standards[rid]) {
+            p.standards[rid] = Array.from({length: 7}, makeDay);
+          } else if (typeof p.standards[rid][0] === 'number') {
+            // old format: [n0..n6] → expand each number to fill all slots
+            p.standards[rid] = p.standards[rid].map(v => new Array(n).fill(v || 0));
+          } else {
+            // ensure 7 days and correct slot count per day
+            while (p.standards[rid].length < 7) p.standards[rid].push(makeDay());
+            p.standards[rid] = p.standards[rid].map(dayArr => {
+              const a = Array.isArray(dayArr) ? [...dayArr] : [];
+              while (a.length < n) a.push(0);
+              return a.slice(0, n);
+            });
+          }
+        });
+        return p;
+      }
+    }
+  } catch(e) {}
+  return seedState();
+}
+
+// ===== DAY-TYPE helpers =====
+// Returns 'holiday' | 'eve' | 'friday' | 'regular'
+function getDayType(dateKey) {
+  const manual = state.dayTypes[dateKey];
+  if (manual) return manual;
+  const d = parseKey(dateKey);
+  if (d.getDay() === 5) return 'friday';
+  return 'regular';
+}
+// short day = ערב חג or שישי → work 08:00-13:00
+function isDayShort(dateKey) { const t = getDayType(dateKey); return t === 'eve' || t === 'friday'; }
+function isDayHoliday(dateKey) { return getDayType(dateKey) === 'holiday'; }
+
+const DAY_TYPE_LABELS = {
+  holiday: { label: '✡️ חג',      cls: 'holiday' },
+  eve:     { label: '⏰ ערב חג',   cls: 'eve' },
+  friday:  { label: '⏰ שישי',     cls: 'friday' },
+  regular: { label: null,           cls: '' }
+};
+
+function toggleDayType(dateKey) {
+  const d = parseKey(dateKey);
+  const isFri = d.getDay() === 5;
+  const current = state.dayTypes[dateKey]; // may be undefined
+  if (isFri) {
+    // Friday: undefined (auto-short) ↔ 'holiday'
+    if (current === 'holiday') delete state.dayTypes[dateKey];
+    else state.dayTypes[dateKey] = 'holiday';
+  } else {
+    // Other: regular → eve → holiday → regular
+    if (!current)              state.dayTypes[dateKey] = 'eve';
+    else if (current === 'eve') state.dayTypes[dateKey] = 'holiday';
+    else                        delete state.dayTypes[dateKey];
+  }
+  saveState();
+  render();
+}
+
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+// ===== Date helpers =====
+function uid(p) { return p + Date.now() + Math.floor(Math.random() * 10000); }
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function getWeekStart(d) {
+  const r = new Date(d); r.setHours(0,0,0,0); r.setDate(r.getDate() - r.getDay()); return r;
+}
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+function fmtKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function parseKey(k) { const [y,m,d] = k.split('-').map(Number); return new Date(y,m-1,d); }
+function fmtShort(d) { return `${d.getDate()}/${d.getMonth()+1}`; }
+function fmtLong(d) { return `${DAYS_HE[d.getDay()]}, ${d.getDate()} ב${MONTHS_HE[d.getMonth()]} ${d.getFullYear()}`; }
+function fmtH(h) {
+  const hr = Math.floor(h), mn = Math.round((h-hr)*60);
+  return `${String(hr).padStart(2,'0')}:${String(mn).padStart(2,'0')}`;
+}
+function sameDay(a, b) { return fmtKey(a) === fmtKey(b); }
+function nowH() { const n = new Date(); return n.getHours() + n.getMinutes()/60; }
+
+function halfSlots(min=TIME_MIN, max=TIME_MAX) {
+  const s = []; for (let h=min; h<=max; h+=0.5) s.push(h); return s;
+}
+function fillTimeSelect(sel, includeEdge=false) {
+  sel.innerHTML = halfSlots(TIME_MIN, includeEdge ? TIME_MAX+0.5 : TIME_MAX)
+    .map(h => `<option value="${h}">${fmtH(h)}</option>`).join('');
+}
+
+// ===== Data access =====
+function getAgent(id) { return state.agents.find(a => a.id === id); }
+function getTemplate(id) { return state.templates.find(t => t.id === id); }
+function getShift(id) { return state.shifts.find(s => s.id === id); }
+function getAbsence(id) { return state.absences.find(a => a.id === id); }
+function getAbsenceForAgentDay(agentId, dateKey) { return state.absences.find(a => a.agentId === agentId && a.date === dateKey); }
+function getShiftsForDay(dateKey) { return state.shifts.filter(s => s.date === dateKey); }
+function getShiftsForAgentDay(agentId, dateKey) { return state.shifts.filter(s => s.agentId === agentId && s.date === dateKey); }
+function getShiftsInRange(s, e) { const sk=fmtKey(s), ek=fmtKey(e); return state.shifts.filter(x=>x.date>=sk&&x.date<=ek); }
+function getAbsencesForDay(dateKey) { return state.absences.filter(a => a.date === dateKey); }
+function getAbsencesInRange(s, e) { const sk=fmtKey(s), ek=fmtKey(e); return state.absences.filter(x=>x.date>=sk&&x.date<=ek); }
+
+function sortedAgents() {
+  const ord = {service:0, sales:1, offline:2};
+  return [...state.agents].sort((a,b) => (ord[a.role]??9)-(ord[b.role]??9) || a.name.localeCompare(b.name,'he'));
+}
+function fmtHours(h) { return h === Math.floor(h) ? String(h) : h.toFixed(1); }
+
+// ===== Admin: current view state =====
+let currentView = 'today';
+let currentWeekStart = PUBLIC_MODE ? publicWeekStart : getWeekStart(new Date());
+let currentMonthDate = new Date();
+let editingAgentId = null, editingTemplateId = null, editingShiftId = null, editingAbsenceId = null;
+let shiftCtx = null; // { dateKey, agentId }
+let absenceCtx = null; // { dateKey, agentId }
+
+// ===== RENDER dispatch =====
+function render() {
+  if (PUBLIC_MODE) { renderPublicView(); return; }
+  renderTabs();
+  populateFilters();
+  if (currentView === 'today') renderTodayView();
+  else if (currentView === 'schedule') renderScheduleView();
+  else if (currentView === 'monthly') renderMonthlyView();
+  else if (currentView === 'agents') renderAgentsView();
+}
+function renderTabs() {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === currentView));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === `view-${currentView}`));
+}
+function populateFilters() {
+  ['today-agent-filter','week-agent-filter','month-agent-filter'].forEach(id => {
+    const sel = document.getElementById(id); if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">כל הנציגים</option>' +
+      sortedAgents().map(a => `<option value="${a.id}">${escHtml(a.name)}</option>`).join('');
+    sel.value = cur;
+  });
+}
+
+// ===== TODAY VIEW =====
+function renderTodayView() {
+  const todayKey = fmtKey(new Date());
+  const h = nowH();
+  const filterAgent = document.getElementById('today-agent-filter').value;
+  document.getElementById('today-date').textContent = fmtLong(new Date());
+
+  const dayShifts = getShiftsForDay(todayKey).filter(s => !filterAgent || s.agentId === filterAgent);
+  const dayAbsences = getAbsencesForDay(todayKey).filter(a => !filterAgent || a.agentId === filterAgent);
+  const active = dayShifts.filter(s => h >= s.start && h < s.end);
+  const byRole = {service:[], sales:[], offline:[]};
+  active.forEach(s => byRole[s.role] && byRole[s.role].push(s));
+
+  // Absent agents
+  const absentNames = dayAbsences.map(a => {
+    const ag = getAgent(a.agentId); if (!ag) return null;
+    const r = ABSENCE_REASONS[a.reason] || ABSENCE_REASONS.other;
+    return `<div class="agent-line"><span>${escHtml(ag.name)}</span><span class="until">${r.icon} ${r.label}</span></div>`;
+  }).filter(Boolean);
+
+  let groupsHtml = Object.entries(ROLES).map(([rid, ri]) => {
+    const shifts = byRole[rid];
+    const lines = shifts.map(s => {
+      const a = getAgent(s.agentId); if (!a) return '';
+      return `<div class="agent-line"><span>${escHtml(a.name)}</span><span class="until">עד ${fmtH(s.end)}</span></div>`;
+    }).join('');
+    return `<div class="now-group"><div class="role-name">${ri.label}</div>${lines || '<div class="empty-text">אין נציגים כרגע</div>'}</div>`;
+  }).join('');
+
+  if (absentNames.length > 0) {
+    groupsHtml += `<div class="now-group absent-group"><div class="role-name">🚫 נעדרים היום</div>${absentNames.join('')}</div>`;
+  }
+  document.getElementById('now-groups').innerHTML = groupsHtml;
+
+  // Full day list
+  const all = [
+    ...dayShifts.sort((a,b) => a.start-b.start).map(s => {
+      const a = getAgent(s.agentId); const ri = ROLES[s.role];
+      return `<div class="day-list-item ${ri.color}">
+        <span class="time">${fmtH(s.start)}-${fmtH(s.end)}</span>
+        <span><span class="role-badge ${ri.color}">${ri.label}</span></span>
+        <span>${escHtml(a ? a.name : '?')}</span>
+      </div>`;
+    }),
+    ...dayAbsences.map(ab => {
+      const a = getAgent(ab.agentId); const r = ABSENCE_REASONS[ab.reason] || ABSENCE_REASONS.other;
+      return `<div class="day-list-item absent">
+        <span class="time">${r.icon} היעדרות</span>
+        <span><span class="role-badge" style="background:#fee2e2;color:#dc2626;">${r.label}</span></span>
+        <span>${escHtml(a ? a.name : '?')}${ab.note ? ` <small style="color:var(--muted)">(${escHtml(ab.note)})</small>` : ''}</span>
+      </div>`;
+    })
+  ];
+  document.getElementById('today-full-schedule').innerHTML = all.length
+    ? `<div class="day-list">${all.join('')}</div>`
+    : '<div class="empty-state"><div class="icon">📭</div><div>אין שיבוצים להיום</div></div>';
+}
+
+// ===== WEEKLY VIEW =====
+function renderScheduleView() {
+  const wEnd = addDays(currentWeekStart, 6);
+  document.getElementById('week-label').textContent = `${fmtShort(currentWeekStart)} - ${fmtShort(wEnd)}, ${currentWeekStart.getFullYear()}`;
+  const filterAgent = document.getElementById('week-agent-filter').value;
+  const todayKey = fmtKey(new Date());
+  const table = document.getElementById('weekly-schedule');
+
+  let html = '<thead><tr><th class="agent-cell">נציג</th>';
+  for (let i=0; i<7; i++) {
+    const d = addDays(currentWeekStart, i);
+    const dk = fmtKey(d);
+    const isToday = dk === todayKey;
+    const dtype = getDayType(dk);
+    const dtInfo = DAY_TYPE_LABELS[dtype];
+    const dtCls = dtype !== 'regular' ? ` dtype-${dtype}` : '';
+    const badge = dtype === 'regular'
+      ? `<button class="day-type-badge set-btn no-print" data-action="toggle-day-type" data-date="${dk}" title="סמן כחג / ערב חג">+ סמן</button>`
+      : `<button class="day-type-badge ${dtInfo.cls} no-print" data-action="toggle-day-type" data-date="${dk}" title="${dtype==='friday'?'לחץ לסמן כחג':'לחץ לשינוי / ביטול'}">${dtInfo.label}${dtype!=='friday'?' ✕':''}</button>`;
+    html += `<th class="day-header${isToday?' today':''}${dtCls}">
+      ${DAYS_HE[i]}<span class="day-date">${fmtShort(d)}</span>${badge}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+
+  const agents = sortedAgents().filter(a => !filterAgent || a.id === filterAgent);
+  if (agents.length === 0) {
+    html += `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--muted)">אין נציגים. הוסף בלשונית "נציגים ותבניות".</td></tr>`;
+  }
+  agents.forEach(agent => {
+    html += `<tr><td class="agent-cell ${ROLES[agent.role].color}">${escHtml(agent.name)}
+      <span class="agent-role">${ROLES[agent.role].label}</span></td>`;
+    for (let i=0; i<7; i++) {
+      const d = addDays(currentWeekStart, i);
+      const dk = fmtKey(d);
+      const isToday = dk === todayKey;
+      const absence = getAbsenceForAgentDay(agent.id, dk);
+      const shifts = getShiftsForAgentDay(agent.id, dk).sort((a,b)=>a.start-b.start);
+
+      let cellHtml = '';
+      if (absence) {
+        const ar = ABSENCE_REASONS[absence.reason] || ABSENCE_REASONS.other;
+        cellHtml += `<div class="absence-chip ${ar.cls}" data-action="edit-absence" data-id="${absence.id}" title="לחץ לעריכה/מחיקה">
+          <span>${ar.icon} ${ar.label}</span>
+          ${absence.note ? `<span class="ab-note">${escHtml(absence.note)}</span>` : ''}
+        </div>`;
+      }
+      shifts.forEach(s => {
+        const diffRole = s.role !== agent.role;
+        cellHtml += `<div class="shift-chip ${ROLES[s.role].color}" data-action="edit-shift" data-id="${s.id}">
+          ${fmtH(s.start)}-${fmtH(s.end)}
+          ${diffRole ? `<span class="role-tag">${ROLES[s.role].label}</span>` : ''}
+        </div>`;
+      });
+      cellHtml += `<div class="cell-actions no-print">
+        <button class="add-shift-btn" data-action="add-shift" data-date="${dk}" data-agent="${agent.id}">+ משמרת</button>
+        ${!absence ? `<button class="add-absence-btn" data-action="add-absence" data-date="${dk}" data-agent="${agent.id}">🚫</button>` : ''}
+      </div>`;
+
+      const dtype = getDayType(dk);
+      const cls = ['day-cell'];
+      if (!absence && shifts.length === 0) cls.push('empty');
+      if (isToday) cls.push('today-col');
+      if (absence) cls.push('absent-day');
+      if (dtype === 'holiday') cls.push('holiday-col');
+      else if (dtype === 'eve' || dtype === 'friday') cls.push('eve-col');
+      html += `<td class="${cls.join(' ')}">${cellHtml}</td>`;
+    }
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+  renderCoverage();
+  renderHoursSummary();
+}
+
+function renderCoverage() {
+  const container = document.getElementById('coverage-container');
+  let html = '';
+  Object.entries(ROLES).forEach(([rid, ri]) => {
+    const slots = [];
+    for (let h=ri.start; h<ri.end; h+=0.5) slots.push(h);
+    html += `<div class="coverage-strip">
+      <div class="coverage-title"><span class="dot ${ri.color}"></span>${ri.label} (${fmtH(ri.start)}-${fmtH(ri.end)})</div>
+      <div class="coverage-table-wrap"><table class="coverage-table"><thead><tr><th class="day-name"></th>`;
+    slots.forEach(h => {
+      const mn = Math.round((h-Math.floor(h))*60);
+      html += `<th>${Math.floor(h)}${mn===30?'½':''}</th>`;
+    });
+    html += `</tr></thead><tbody>`;
+    for (let i=0; i<7; i++) {
+      const d = addDays(currentWeekStart, i);
+      const dk = fmtKey(d);
+      const dtype = getDayType(dk);
+      const dayShifts = getShiftsForDay(dk).filter(s => s.role === rid);
+      const dayAbsences = getAbsencesForDay(dk);
+      const shortDay = dtype === 'eve' || dtype === 'friday';
+      const dayLabel = dtype === 'holiday' ? `✡️ ${DAYS_HE[i]}` : dtype === 'eve' ? `⏰ ${DAYS_HE[i]}` : dtype === 'friday' ? `⏰ ${DAYS_HE[i]}` : `${DAYS_HE[i]} ${fmtShort(d)}`;
+      html += `<tr><td class="day-name">${dayLabel}</td>`;
+      slots.forEach(h => {
+        if (dtype === 'holiday') {
+          html += `<td class="coverage-cell inactive" title="חג">—</td>`;
+        } else if (shortDay && h >= 13) {
+          html += `<td class="coverage-cell inactive" title="מחוץ לשעות">—</td>`;
+        } else {
+          const absentAgents = new Set(dayAbsences.map(a => a.agentId));
+          const count = dayShifts.filter(s => s.start <= h && s.end > h && !absentAgents.has(s.agentId)).length;
+          const slotIdx = Math.round((h - ri.start) * 2);
+          const std = state.standards[rid]?.[d.getDay()]?.[slotIdx] ?? 0;
+          let cls;
+          if (std === 0) {
+            cls = count > 0 ? 'c-info' : 'c-zero';
+          } else {
+            const diff = Math.abs(count - std);
+            cls = diff === 0 ? 'c-ok' : diff === 1 ? 'c-warn' : 'c-bad';
+          }
+          const title = std > 0 ? `תקן: ${std} | בפועל: ${count}` : `${count} נציגים`;
+          html += `<td class="coverage-cell ${cls}" title="${title}">${count||''}</td>`;
+        }
+      });
+      html += '</tr>';
+    }
+    html += '</tbody></table></div></div>';
+  });
+  container.innerHTML = html;
+}
+
+function renderHoursSummary() {
+  const summaryDiv = document.getElementById('hours-summary');
+  const totals = {};
+  state.agents.forEach(a => totals[a.id] = { hours: 0, shifts: 0, absences: {} });
+  getShiftsInRange(currentWeekStart, addDays(currentWeekStart, 6)).forEach(s => {
+    if (!totals[s.agentId]) return;
+    totals[s.agentId].hours += (s.end - s.start);
+    totals[s.agentId].shifts++;
+  });
+  getAbsencesInRange(currentWeekStart, addDays(currentWeekStart, 6)).forEach(a => {
+    if (!totals[a.agentId]) return;
+    totals[a.agentId].absences[a.reason] = (totals[a.agentId].absences[a.reason] || 0) + 1;
+  });
+  const items = sortedAgents().map(a => ({...a, ...totals[a.id]})).sort((x,y) => y.hours - x.hours);
+  if (!items.length) { summaryDiv.innerHTML = '<div class="empty-state">אין נציגים</div>'; return; }
+  summaryDiv.innerHTML = items.map(a => {
+    const absBadges = Object.entries(a.absences).map(([r,c]) => {
+      const ar = ABSENCE_REASONS[r] || ABSENCE_REASONS.other;
+      return `<span class="abs-mini ${ar.cls}">${ar.icon}×${c}</span>`;
+    }).join('');
+    return `<div class="summary-item">
+      <div>
+        <span class="role-badge ${ROLES[a.role].color}">${escHtml(a.name)}</span>
+        ${absBadges ? `<div class="abs-badges">${absBadges}</div>` : ''}
+      </div>
+      <div style="text-align:left">
+        <div class="hours">${fmtHours(a.hours)}<span class="hours-label"> שע'</span></div>
+        <div class="hours-label">${a.shifts} משמרות</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== MONTHLY VIEW =====
+function renderMonthlyView() {
+  const year = currentMonthDate.getFullYear(), month = currentMonthDate.getMonth();
+  document.getElementById('month-label').textContent = `${MONTHS_HE[month]} ${year}`;
+  const filterAgent = document.getElementById('month-agent-filter').value;
+  const firstDay = new Date(year, month, 1), lastDay = new Date(year, month+1, 0);
+  const startOffset = firstDay.getDay(), daysInMonth = lastDay.getDate();
+  const today = new Date();
+  let html = '<table class="schedule" style="min-width:0"><thead><tr>';
+  for (let i=0; i<7; i++) html += `<th>${DAYS_HE[i]}</th>`;
+  html += '</tr></thead><tbody>';
+  let day = 1;
+  const rows = Math.ceil((startOffset + daysInMonth) / 7);
+  for (let r=0; r<rows; r++) {
+    html += '<tr>';
+    for (let c=0; c<7; c++) {
+      const idx = r*7+c;
+      if (idx < startOffset || day > daysInMonth) { html += '<td style="background:#fafafa;height:90px;"></td>'; continue; }
+      const d = new Date(year, month, day);
+      const dk = fmtKey(d);
+      const isToday = sameDay(d, today);
+      const shifts = getShiftsForDay(dk).filter(s => !filterAgent || s.agentId === filterAgent);
+      const absences = getAbsencesForDay(dk).filter(a => !filterAgent || a.agentId === filterAgent);
+      const byRole = {service:0, sales:0, offline:0};
+      shifts.forEach(s => byRole[s.role] = (byRole[s.role]||0)+1);
+      let badges = Object.entries(ROLES).filter(([r]) => byRole[r] > 0)
+        .map(([r,ri]) => `<div class="role-badge ${ri.color}" style="margin:1px 0;font-size:10px;">${ri.label}: ${byRole[r]}</div>`).join('');
+      if (absences.length > 0)
+        badges += `<div class="role-badge" style="background:#fee2e2;color:#dc2626;margin:1px 0;font-size:10px;">🚫 ${absences.length} נעדר${absences.length>1?'ים':''}</div>`;
+      html += `<td style="height:90px;vertical-align:top;${isToday?'background:#fef3c7;':''}">
+        <div style="font-weight:600;font-size:13px;${isToday?'color:var(--warning);':''}">${day}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;margin-top:3px;">${badges}</div>
+      </td>`;
+      day++;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('monthly-grid').innerHTML = html;
+}
+
+// ===== STANDARDS =====
+function renderStandardsTable() {
+  const container = document.getElementById('standards-container');
+  if (!container) return;
+  let html = '';
+  Object.entries(ROLES).forEach(([rid, ri]) => {
+    const slots = [];
+    for (let h = ri.start; h < ri.end; h += 0.5) slots.push(h);
+    const dayStds = state.standards[rid] || Array.from({length:7}, () => new Array(slots.length).fill(0));
+    html += `<div class="std-strip">
+      <div class="std-strip-title"><span class="dot ${ri.color}"></span>${ri.label}</div>
+      <div class="std-table-wrap"><table class="std-table"><thead><tr>
+        <th class="std-day-col"></th>`;
+    slots.forEach(h => {
+      const mn = Math.round((h - Math.floor(h)) * 60);
+      html += `<th>${Math.floor(h)}${mn===30?'½':''}</th>`;
+    });
+    html += `</tr></thead><tbody>`;
+    for (let dow = 0; dow < 7; dow++) {
+      const dayArr = dayStds[dow] || new Array(slots.length).fill(0);
+      const cls = dow===5 ? ' fri' : dow===6 ? ' sat' : '';
+      html += `<tr><td class="std-day-col${cls}">${DAYS_HE[dow]}</td>`;
+      slots.forEach((h, si) => {
+        const val = dayArr[si] || 0;
+        html += `<td><input class="std-input" type="number" min="0" max="20" value="${val}"
+          data-role="${rid}" data-dow="${dow}" data-slot="${si}"
+          title="${ri.label} · ${DAYS_HE[dow]} · ${fmtH(h)}"></td>`;
+      });
+      html += '</tr>';
+    }
+    html += '</tbody></table></div></div>';
+  });
+  container.innerHTML = html;
+}
+
+function saveStandard(role, dow, slotIdx, value) {
+  if (!state.standards[role]?.[dow]) return;
+  state.standards[role][dow][slotIdx] = Math.max(0, Math.min(20, value || 0));
+  saveState();
+  if (currentView === 'schedule') renderCoverage();
+}
+
+// ===== AGENTS VIEW =====
+function renderAgentsView() {
+  renderStandardsTable();
+  const list = document.getElementById('agents-list');
+  list.innerHTML = !state.agents.length
+    ? '<div class="empty-state"><div class="icon">👤</div><div>עדיין אין נציגים</div></div>'
+    : sortedAgents().map(a => {
+        const tpl = a.defaultTemplateId ? getTemplate(a.defaultTemplateId) : null;
+        return `<div class="agent-item">
+          <div>
+            <span class="name">${escHtml(a.name)}</span>
+            <span class="role-badge ${ROLES[a.role].color}">${ROLES[a.role].label}</span>
+            ${tpl ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">ברירת מחדל: ${escHtml(tpl.name)}</div>` : ''}
+          </div>
+          <div class="item-actions">
+            <button class="icon-btn" data-action="edit-agent" data-id="${a.id}">✎</button>
+            <button class="icon-btn danger" data-action="delete-agent" data-id="${a.id}">🗑</button>
+          </div>
+        </div>`;
+      }).join('');
+  const tList = document.getElementById('templates-list');
+  tList.innerHTML = !state.templates.length
+    ? '<div class="empty-state"><div class="icon">⏱</div><div>עדיין אין תבניות</div></div>'
+    : state.templates.map(t => {
+        const roleBadge = t.role
+          ? `<span class="role-badge ${ROLES[t.role].color}">${ROLES[t.role].label}</span>`
+          : `<span class="role-badge any">כל תפקיד</span>`;
+        return `<div class="template-item">
+          <div>
+            <span class="name">${escHtml(t.name)}</span> ${roleBadge}
+            <span class="times">${fmtH(t.start)} - ${fmtH(t.end)} (${fmtHours(t.end-t.start)} שע')</span>
+          </div>
+          <div class="item-actions">
+            <button class="icon-btn" data-action="edit-template" data-id="${t.id}">✎</button>
+            <button class="icon-btn danger" data-action="delete-template" data-id="${t.id}">🗑</button>
+          </div>
+        </div>`;
+      }).join('');
+}
+
+// ===== PUBLIC VIEW =====
+function renderPublicView() {
+  const todayKey = fmtKey(new Date());
+  const h = nowH();
+
+  // Today date
+  document.getElementById('pub-today-date').textContent = fmtLong(new Date());
+
+  // Week label
+  const wEnd = addDays(currentWeekStart, 6);
+  document.getElementById('pub-week-label').textContent = `${fmtShort(currentWeekStart)} - ${fmtShort(wEnd)}`;
+
+  // Populate agent filter
+  const filterSel = document.getElementById('pub-agent-filter');
+  const curFilter = filterSel.value;
+  filterSel.innerHTML = '<option value="">כל הנציגים</option>' +
+    sortedAgents().map(a => `<option value="${a.id}">${escHtml(a.name)}</option>`).join('');
+  filterSel.value = curFilter;
+
+  const filterAgent = filterSel.value;
+
+  // Now groups
+  const dayShifts = getShiftsForDay(todayKey).filter(s => !filterAgent || s.agentId === filterAgent);
+  const active = dayShifts.filter(s => h >= s.start && h < s.end);
+  const byRole = {service:[], sales:[], offline:[]};
+  active.forEach(s => byRole[s.role] && byRole[s.role].push(s));
+  const dayAbsences = getAbsencesForDay(todayKey).filter(a => !filterAgent || a.agentId === filterAgent);
+
+  let nowHtml = Object.entries(ROLES).map(([rid, ri]) => {
+    const shifts = byRole[rid];
+    const lines = shifts.map(s => {
+      const a = getAgent(s.agentId); if (!a) return '';
+      return `<div class="agent-line"><span>${escHtml(a.name)}</span><span class="until">עד ${fmtH(s.end)}</span></div>`;
+    }).join('');
+    return `<div class="now-group"><div class="role-name">${ri.label}</div>${lines || '<div class="empty-text">אין נציגים כרגע</div>'}</div>`;
+  }).join('');
+  if (dayAbsences.length) {
+    const abLines = dayAbsences.map(a => {
+      const ag = getAgent(a.agentId); const r = ABSENCE_REASONS[a.reason]||ABSENCE_REASONS.other;
+      return `<div class="agent-line"><span>${escHtml(ag?ag.name:'?')}</span><span class="until">${r.icon}</span></div>`;
+    }).join('');
+    nowHtml += `<div class="now-group absent-group"><div class="role-name">🚫 נעדרים</div>${abLines}</div>`;
+  }
+  document.getElementById('pub-now-groups').innerHTML = nowHtml;
+
+  // Weekly table (read-only)
+  const table = document.getElementById('pub-weekly-schedule');
+  let html = '<thead><tr><th class="agent-cell">נציג</th>';
+  for (let i=0; i<7; i++) {
+    const d = addDays(currentWeekStart, i);
+    const dk = fmtKey(d);
+    const isToday = dk === todayKey;
+    const dtype = getDayType(dk);
+    const dtInfo = DAY_TYPE_LABELS[dtype];
+    const dtCls = dtype !== 'regular' ? ` dtype-${dtype}` : '';
+    const badge = dtInfo.label ? `<span class="day-type-badge ${dtInfo.cls}" style="cursor:default">${dtInfo.label}</span>` : '';
+    html += `<th class="day-header${isToday?' today':''}${dtCls}">${DAYS_HE[i]}<span class="day-date">${fmtShort(d)}</span>${badge}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+
+  const agents = sortedAgents().filter(a => !filterAgent || a.id === filterAgent);
+  if (!agents.length) {
+    html += `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--muted)">לא נמצאו נציגים</td></tr>`;
+  }
+  agents.forEach(agent => {
+    html += `<tr><td class="agent-cell ${ROLES[agent.role].color}">${escHtml(agent.name)}<span class="agent-role">${ROLES[agent.role].label}</span></td>`;
+    for (let i=0; i<7; i++) {
+      const d = addDays(currentWeekStart, i);
+      const dk = fmtKey(d);
+      const isToday = dk === todayKey;
+      const dtype = getDayType(dk);
+      const absence = getAbsenceForAgentDay(agent.id, dk);
+      const shifts = getShiftsForAgentDay(agent.id, dk).sort((a,b) => a.start-b.start);
+      let cellHtml = '';
+      if (dtype === 'holiday' && !absence && shifts.length === 0) {
+        cellHtml = '<span style="color:#9ca3af;font-size:11px;">✡️ חג</span>';
+      } else {
+        if (absence) {
+          const ar = ABSENCE_REASONS[absence.reason]||ABSENCE_REASONS.other;
+          cellHtml += `<div class="absence-chip ${ar.cls}" style="cursor:default">${ar.icon} ${ar.label}</div>`;
+        }
+        shifts.forEach(s => {
+          const diffRole = s.role !== agent.role;
+          cellHtml += `<div class="shift-chip ${ROLES[s.role].color}" style="cursor:default">
+            ${fmtH(s.start)}-${fmtH(s.end)}
+            ${diffRole ? `<span class="role-tag">${ROLES[s.role].label}</span>` : ''}
+          </div>`;
+        });
+        if (!absence && shifts.length === 0) cellHtml = '<span style="color:#d1d5db;font-size:11px;">—</span>';
+      }
+      const cls = ['day-cell'];
+      if (isToday) cls.push('today-col');
+      if (absence) cls.push('absent-day');
+      if (dtype === 'holiday') cls.push('holiday-col');
+      else if (dtype === 'eve' || dtype === 'friday') cls.push('eve-col');
+      html += `<td class="${cls.join(' ')}">${cellHtml}</td>`;
+    }
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+
+  // Notice
+  const d = new Date(); const dd = d.getDate(), dm = d.getMonth()+1, dy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
+  document.getElementById('pub-notice').textContent =
+    `הלינק נוצר ב-${dd}/${dm}/${dy} ${hh}:${mm}. אם הלו"ז עודכן, בקשי מהמנהלת לשלוח לינק מעודכן.`;
+}
+
+// ===== MODALS =====
+
+// Agent
+function openAgentModal(agent) {
+  editingAgentId = agent ? agent.id : null;
+  document.getElementById('modal-agent-title').textContent = agent ? 'ערוך נציג' : 'הוסף נציג';
+  document.getElementById('agent-name-input').value = agent ? agent.name : '';
+  document.getElementById('agent-role-input').value = agent ? agent.role : 'service';
+  const tSel = document.getElementById('agent-default-template');
+  tSel.innerHTML = '<option value="">— ללא —</option>' +
+    state.templates.map(t => `<option value="${t.id}">${escHtml(t.name)} (${fmtH(t.start)}-${fmtH(t.end)})</option>`).join('');
+  tSel.value = (agent && agent.defaultTemplateId) || '';
+  openModal('modal-agent');
+  setTimeout(() => document.getElementById('agent-name-input').focus(), 50);
+}
+function saveAgentModal() {
+  const name = document.getElementById('agent-name-input').value.trim();
+  if (!name) { showToast('יש להזין שם', 'danger'); return; }
+  const role = document.getElementById('agent-role-input').value;
+  const defaultTemplateId = document.getElementById('agent-default-template').value || undefined;
+  if (editingAgentId) { const a=getAgent(editingAgentId); if(a){a.name=name;a.role=role;a.defaultTemplateId=defaultTemplateId;} }
+  else state.agents.push({ id: uid('a'), name, role, defaultTemplateId });
+  saveState(); closeModal('modal-agent'); showToast('הנציג נשמר','success'); render();
+}
+function deleteAgent(id) {
+  const a = getAgent(id); if (!a) return;
+  const sc = state.shifts.filter(s=>s.agentId===id).length;
+  if (!confirm(`למחוק את "${a.name}"?${sc?` (${sc} שיבוצים ימחקו)`:''}`)) return;
+  state.agents = state.agents.filter(x=>x.id!==id);
+  state.shifts = state.shifts.filter(s=>s.agentId!==id);
+  state.absences = state.absences.filter(x=>x.agentId!==id);
+  saveState(); showToast('הנציג נמחק','success'); render();
+}
+
+// Template
+function openTemplateModal(tpl) {
+  editingTemplateId = tpl ? tpl.id : null;
+  document.getElementById('modal-template-title').textContent = tpl ? 'ערוך תבנית' : 'הוסף תבנית';
+  document.getElementById('template-name-input').value = tpl ? tpl.name : '';
+  document.getElementById('template-role-input').value = tpl && tpl.role ? tpl.role : '';
+  fillTimeSelect(document.getElementById('template-start-input'));
+  fillTimeSelect(document.getElementById('template-end-input'), true);
+  document.getElementById('template-start-input').value = tpl ? tpl.start : 8;
+  document.getElementById('template-end-input').value = tpl ? tpl.end : 16.5;
+  openModal('modal-template');
+  setTimeout(() => document.getElementById('template-name-input').focus(), 50);
+}
+function saveTemplateModal() {
+  const name = document.getElementById('template-name-input').value.trim();
+  if (!name) { showToast('יש להזין שם תבנית','danger'); return; }
+  const role = document.getElementById('template-role-input').value || undefined;
+  const start = parseFloat(document.getElementById('template-start-input').value);
+  const end = parseFloat(document.getElementById('template-end-input').value);
+  if (end <= start) { showToast('שעת סיום חייבת להיות אחרי התחלה','danger'); return; }
+  if (editingTemplateId) { const t=getTemplate(editingTemplateId); if(t){t.name=name;t.role=role;t.start=start;t.end=end;} }
+  else state.templates.push({ id: uid('t'), name, role, start, end });
+  saveState(); closeModal('modal-template'); showToast('התבנית נשמרה','success'); render();
+}
+function deleteTemplate(id) {
+  const t = getTemplate(id); if (!t) return;
+  if (!confirm(`למחוק את "${t.name}"?`)) return;
+  state.templates = state.templates.filter(x=>x.id!==id);
+  state.agents.forEach(a => { if(a.defaultTemplateId===id) delete a.defaultTemplateId; });
+  saveState(); showToast('התבנית נמחקה','success'); render();
+}
+
+// Shift
+function openShiftModal({ dateKey, agentId, shiftId }) {
+  editingShiftId = shiftId || null;
+  const existing = shiftId ? getShift(shiftId) : null;
+  shiftCtx = { dateKey: dateKey || (existing && existing.date) };
+  document.getElementById('modal-shift-title').textContent = existing ? 'עריכת שיבוץ' : 'הוספת שיבוץ';
+  document.getElementById('modal-shift-info').innerHTML = `<strong>${fmtLong(parseKey(shiftCtx.dateKey))}</strong>`;
+
+  const aSel = document.getElementById('shift-agent-input');
+  aSel.innerHTML = sortedAgents().map(a => `<option value="${a.id}">${escHtml(a.name)} (${ROLES[a.role].label})</option>`).join('');
+  const tSel = document.getElementById('shift-template-picker');
+  tSel.innerHTML = '<option value="">— מלא ידנית —</option>' +
+    state.templates.map(t => `<option value="${t.id}">${escHtml(t.name)} (${fmtH(t.start)}-${fmtH(t.end)}${t.role?', '+ROLES[t.role].label:''})</option>`).join('');
+  tSel.value = '';
+  fillTimeSelect(document.getElementById('shift-start-input'));
+  fillTimeSelect(document.getElementById('shift-end-input'), true);
+
+  const dtype = getDayType(shiftCtx.dateKey);
+  const isShort   = isDayShort(shiftCtx.dateKey);
+  const isHoliday = isDayHoliday(shiftCtx.dateKey);
+
+  // Show day-type banner in modal info
+  let infoExtra = '';
+  if (isHoliday) infoExtra = ' <span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:8px;font-size:12px;">✡️ יום חג — האם אתה בטוח שצריך לשבץ?</span>';
+  else if (isShort) infoExtra = ' <span style="background:#ffedd5;color:#c2410c;padding:2px 8px;border-radius:8px;font-size:12px;">⏰ יום קצר — ברירת מחדל 08:00-13:00</span>';
+  document.getElementById('modal-shift-info').innerHTML = `<strong>${fmtLong(parseKey(shiftCtx.dateKey))}</strong>${infoExtra}`;
+
+  if (existing) {
+    aSel.value = existing.agentId;
+    document.getElementById('shift-role-input').value = existing.role;
+    document.getElementById('shift-start-input').value = existing.start;
+    document.getElementById('shift-end-input').value = existing.end;
+    document.getElementById('modal-shift-delete').style.display = '';
+  } else {
+    document.getElementById('modal-shift-delete').style.display = 'none';
+    if (agentId) aSel.value = agentId;
+    const ag = getAgent(aSel.value);
+    if (ag) {
+      document.getElementById('shift-role-input').value = ag.role;
+      if (isShort) {
+        // ערב חג / שישי → default 08:00-13:00, ignore personal template
+        document.getElementById('shift-start-input').value = 8;
+        document.getElementById('shift-end-input').value = 13;
+      } else {
+        const defTpl = ag.defaultTemplateId ? getTemplate(ag.defaultTemplateId) : null;
+        if (defTpl) { applyTplToShiftForm(defTpl); tSel.value = defTpl.id; }
+        else { document.getElementById('shift-start-input').value = 8; document.getElementById('shift-end-input').value = 16.5; }
+      }
+    }
+  }
+  updateShiftWarnings();
+  openModal('modal-shift');
+}
+function applyTplToShiftForm(tpl) {
+  document.getElementById('shift-start-input').value = tpl.start;
+  document.getElementById('shift-end-input').value = tpl.end;
+  if (tpl.role) document.getElementById('shift-role-input').value = tpl.role;
+}
+function updateShiftWarnings() {
+  const agentId = document.getElementById('shift-agent-input').value;
+  const role = document.getElementById('shift-role-input').value;
+  const start = parseFloat(document.getElementById('shift-start-input').value);
+  const end = parseFloat(document.getElementById('shift-end-input').value);
+  const warnings = [];
+  if (!isNaN(start)&&!isNaN(end)&&end<=start) warnings.push('שעת סיום חייבת להיות אחרי שעת התחלה');
+  const ri = ROLES[role];
+  if (ri && (start < ri.start || end > ri.end))
+    warnings.push(`השעות חורגות משעות הפעילות של ${ri.label} (${fmtH(ri.start)}-${fmtH(ri.end)})`);
+  if (agentId && shiftCtx) {
+    const overlaps = getShiftsForAgentDay(agentId, shiftCtx.dateKey)
+      .filter(s => s.id !== editingShiftId && !(end<=s.start || start>=s.end));
+    if (overlaps.length)
+      warnings.push(`חפיפה עם: ${overlaps.map(s=>`${fmtH(s.start)}-${fmtH(s.end)}`).join(', ')}`);
+  }
+  document.getElementById('shift-warnings').innerHTML = warnings.length
+    ? `<div class="warning-box">⚠ <ul>${warnings.map(w=>`<li>${escHtml(w)}</li>`).join('')}</ul></div>` : '';
+}
+function saveShiftModal() {
+  const agentId = document.getElementById('shift-agent-input').value;
+  const role = document.getElementById('shift-role-input').value;
+  const start = parseFloat(document.getElementById('shift-start-input').value);
+  const end = parseFloat(document.getElementById('shift-end-input').value);
+  if (!agentId) { showToast('בחר נציג','danger'); return; }
+  if (isNaN(start)||isNaN(end)||end<=start) { showToast('שעות לא תקינות','danger'); return; }
+  if (editingShiftId) { const s=getShift(editingShiftId); if(s){s.agentId=agentId;s.role=role;s.start=start;s.end=end;} }
+  else state.shifts.push({ id:uid('s'), date:shiftCtx.dateKey, agentId, role, start, end });
+  saveState(); closeModal('modal-shift'); showToast('השיבוץ נשמר','success'); render();
+}
+function deleteShiftFromModal() {
+  if (!editingShiftId) return;
+  if (!confirm('למחוק את השיבוץ?')) return;
+  state.shifts = state.shifts.filter(s=>s.id!==editingShiftId);
+  saveState(); closeModal('modal-shift'); showToast('השיבוץ נמחק','success'); render();
+}
+
+// Absence
+function openAbsenceModal({ dateKey, agentId, absenceId }) {
+  editingAbsenceId = absenceId || null;
+  const existing = absenceId ? getAbsence(absenceId) : null;
+  absenceCtx = { dateKey: dateKey || (existing && existing.date) };
+  document.getElementById('modal-absence-title').textContent = existing ? 'ערוך היעדרות' : 'רישום היעדרות';
+  document.getElementById('modal-absence-info').innerHTML = `<strong>${fmtLong(parseKey(absenceCtx.dateKey))}</strong>`;
+  const aSel = document.getElementById('absence-agent-input');
+  aSel.innerHTML = sortedAgents().map(a => `<option value="${a.id}">${escHtml(a.name)}</option>`).join('');
+  if (agentId) aSel.value = agentId;
+  document.getElementById('absence-reason-input').value = existing ? existing.reason : 'sick';
+  document.getElementById('absence-note-input').value = existing ? (existing.note || '') : '';
+  document.getElementById('modal-absence-delete').style.display = existing ? '' : 'none';
+  openModal('modal-absence');
+}
+function saveAbsenceModal() {
+  const agentId = document.getElementById('absence-agent-input').value;
+  const reason = document.getElementById('absence-reason-input').value;
+  const note = document.getElementById('absence-note-input').value.trim() || undefined;
+  if (!agentId) { showToast('בחר נציג','danger'); return; }
+  if (editingAbsenceId) {
+    const a = getAbsence(editingAbsenceId);
+    if (a) { a.agentId = agentId; a.reason = reason; a.note = note; }
+  } else {
+    const existing = getAbsenceForAgentDay(agentId, absenceCtx.dateKey);
+    if (existing) { existing.reason = reason; existing.note = note; }
+    else state.absences.push({ id: uid('ab'), date: absenceCtx.dateKey, agentId, reason, note });
+  }
+  saveState(); closeModal('modal-absence'); showToast('ההיעדרות נרשמה','success'); render();
+}
+function deleteAbsenceFromModal() {
+  if (!editingAbsenceId) return;
+  if (!confirm('למחוק את ההיעדרות?')) return;
+  state.absences = state.absences.filter(a=>a.id!==editingAbsenceId);
+  saveState(); closeModal('modal-absence'); showToast('ההיעדרות נמחקה','success'); render();
+}
+
+// ===== WEEK OPERATIONS =====
+function cloneFromPrevWeek() {
+  const prevStart = addDays(currentWeekStart, -7);
+  const prevEnd = addDays(prevStart, 6);
+  const prevShifts = getShiftsInRange(prevStart, prevEnd);
+  const prevAbsences = getAbsencesInRange(prevStart, prevEnd);
+  if (!prevShifts.length && !prevAbsences.length) { showToast('אין שיבוצים בשבוע הקודם','danger'); return; }
+  const curStart = fmtKey(currentWeekStart), curEnd = fmtKey(addDays(currentWeekStart, 6));
+  const curCount = state.shifts.filter(s=>s.date>=curStart&&s.date<=curEnd).length;
+  let replace = true;
+  if (curCount > 0) replace = confirm(`בשבוע הנוכחי יש ${curCount} שיבוצים. אישור = החלפה; ביטול = הוספה.`);
+  if (replace) {
+    state.shifts = state.shifts.filter(s=>s.date<curStart||s.date>curEnd);
+    state.absences = state.absences.filter(a=>a.date<curStart||a.date>curEnd);
+    // clear manual day-type overrides for current week
+    for (let i=0; i<7; i++) delete state.dayTypes[fmtKey(addDays(currentWeekStart,i))];
+  }
+  prevShifts.forEach(s => {
+    const nd = addDays(parseKey(s.date), 7);
+    state.shifts.push({ id:uid('s'), date:fmtKey(nd), agentId:s.agentId, role:s.role, start:s.start, end:s.end });
+  });
+  prevAbsences.forEach(a => {
+    const nd = addDays(parseKey(a.date), 7);
+    state.absences.push({ id:uid('ab'), date:fmtKey(nd), agentId:a.agentId, reason:a.reason, note:a.note });
+  });
+  // copy day-type overrides (e.g. holidays) from prev week, but skip Fridays (auto)
+  for (let i=0; i<7; i++) {
+    const prevDk = fmtKey(addDays(prevStart, i));
+    const newDk  = fmtKey(addDays(currentWeekStart, i));
+    if (state.dayTypes[prevDk]) state.dayTypes[newDk] = state.dayTypes[prevDk];
+  }
+  saveState(); showToast(`הועתקו ${prevShifts.length} שיבוצים`, 'success'); render();
+}
+function clearCurrentWeek() {
+  const cs = fmtKey(currentWeekStart), ce = fmtKey(addDays(currentWeekStart, 6));
+  const cnt = state.shifts.filter(s=>s.date>=cs&&s.date<=ce).length + state.absences.filter(a=>a.date>=cs&&a.date<=ce).length;
+  if (!cnt) { showToast('אין שיבוצים בשבוע זה','danger'); return; }
+  if (!confirm(`למחוק ${cnt} רשומות בשבוע?`)) return;
+  state.shifts = state.shifts.filter(s=>s.date<cs||s.date>ce);
+  state.absences = state.absences.filter(a=>a.date<cs||a.date>ce);
+  for (let i=0; i<7; i++) delete state.dayTypes[fmtKey(addDays(currentWeekStart,i))];
+  saveState(); showToast('השבוע נוקה','success'); render();
+}
+
+function generatePublicLink() {
+  // Encode full state + creation time into a public URL
+  const payload = {
+    agents: state.agents,
+    templates: state.templates,
+    shifts: state.shifts,
+    absences: state.absences,
+    dayTypes: state.dayTypes,
+    createdAt: new Date().toISOString()
+  };
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  const url = `${window.location.origin}${window.location.pathname}?v=1#${encoded}`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => {
+      showToast('הלינק לנציגים הועתק ללוח! שלחי ב-WhatsApp / מייל', 'success');
+    }).catch(() => prompt('העתק את הלינק לנציגים:', url));
+  } else {
+    prompt('העתק את הלינק לנציגים:', url);
+  }
+}
+
+// ===== HELPERS =====
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+let _toastT;
+function showToast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = `toast show ${type}`;
+  clearTimeout(_toastT);
+  _toastT = setTimeout(() => el.className = 'toast', 2600);
+}
+function switchView(v) { currentView = v; render(); }
+
+// ===== EVENTS =====
+function setupEvents() {
+  if (PUBLIC_MODE) {
+    document.getElementById('pub-prev-week').addEventListener('click', () => { currentWeekStart = addDays(currentWeekStart,-7); renderPublicView(); });
+    document.getElementById('pub-next-week').addEventListener('click', () => { currentWeekStart = addDays(currentWeekStart,7); renderPublicView(); });
+    document.getElementById('pub-agent-filter').addEventListener('change', renderPublicView);
+    return;
+  }
+
+  // Tabs
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchView(t.dataset.view)));
+
+  // Week nav
+  document.getElementById('prev-week').addEventListener('click', ()=>{ currentWeekStart=addDays(currentWeekStart,-7); render(); });
+  document.getElementById('next-week').addEventListener('click', ()=>{ currentWeekStart=addDays(currentWeekStart,7); render(); });
+  document.getElementById('today-week').addEventListener('click', ()=>{ currentWeekStart=getWeekStart(new Date()); render(); });
+
+  // Month nav
+  document.getElementById('prev-month').addEventListener('click', ()=>{ currentMonthDate=new Date(currentMonthDate.getFullYear(),currentMonthDate.getMonth()-1,1); render(); });
+  document.getElementById('next-month').addEventListener('click', ()=>{ currentMonthDate=new Date(currentMonthDate.getFullYear(),currentMonthDate.getMonth()+1,1); render(); });
+
+  // Filters
+  document.getElementById('today-agent-filter').addEventListener('change', renderTodayView);
+  document.getElementById('week-agent-filter').addEventListener('change', renderScheduleView);
+  document.getElementById('month-agent-filter').addEventListener('change', renderMonthlyView);
+
+  // Toolbar
+  document.getElementById('clone-week').addEventListener('click', cloneFromPrevWeek);
+  document.getElementById('clear-week').addEventListener('click', clearCurrentWeek);
+  document.getElementById('export-pdf').addEventListener('click', ()=>window.print());
+  document.getElementById('share-agents-link').addEventListener('click', generatePublicLink);
+
+  // Agents/templates
+  document.getElementById('add-agent-btn').addEventListener('click', ()=>openAgentModal(null));
+  document.getElementById('add-template-btn').addEventListener('click', ()=>openTemplateModal(null));
+  document.getElementById('reset-data').addEventListener('click', ()=>{
+    if (confirm('למחוק את כל הנתונים?')) {
+      localStorage.removeItem(STORAGE_KEY); state=loadAdminState(); showToast('אופס','success'); render();
+    }
+  });
+
+  // Modal closes
+  document.querySelectorAll('[data-close-modal]').forEach(b => b.addEventListener('click', ()=>{
+    document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('active'));
+  }));
+  document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e=>{ if(e.target===o) o.classList.remove('active'); }));
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('active')); });
+
+  // Modal saves
+  document.getElementById('modal-agent-save').addEventListener('click', saveAgentModal);
+  document.getElementById('modal-template-save').addEventListener('click', saveTemplateModal);
+  document.getElementById('modal-shift-save').addEventListener('click', saveShiftModal);
+  document.getElementById('modal-shift-delete').addEventListener('click', deleteShiftFromModal);
+  document.getElementById('modal-absence-save').addEventListener('click', saveAbsenceModal);
+  document.getElementById('modal-absence-delete').addEventListener('click', deleteAbsenceFromModal);
+
+  // Enter
+  document.getElementById('agent-name-input').addEventListener('keydown', e=>{ if(e.key==='Enter') saveAgentModal(); });
+  document.getElementById('template-name-input').addEventListener('keydown', e=>{ if(e.key==='Enter') saveTemplateModal(); });
+
+  // Shift modal live validation
+  ['shift-agent-input','shift-role-input','shift-start-input','shift-end-input'].forEach(id=>{
+    document.getElementById(id).addEventListener('change', updateShiftWarnings);
+  });
+  document.getElementById('shift-template-picker').addEventListener('change', e=>{
+    const tpl = getTemplate(e.target.value);
+    if (tpl) { applyTplToShiftForm(tpl); updateShiftWarnings(); }
+  });
+  document.getElementById('shift-agent-input').addEventListener('change', ()=>{
+    if (editingShiftId) return;
+    const a = getAgent(document.getElementById('shift-agent-input').value);
+    if (a) {
+      document.getElementById('shift-role-input').value = a.role;
+      if (a.defaultTemplateId) {
+        const t = getTemplate(a.defaultTemplateId);
+        if (t) { applyTplToShiftForm(t); document.getElementById('shift-template-picker').value = t.id; }
+      }
+    }
+    updateShiftWarnings();
+  });
+
+  // Standards inputs
+  document.body.addEventListener('change', e=>{
+    const inp = e.target.closest('.std-input');
+    if (!inp) return;
+    saveStandard(inp.dataset.role, parseInt(inp.dataset.dow), parseInt(inp.dataset.slot), parseInt(inp.value)||0);
+  });
+
+  // Delegated clicks
+  document.body.addEventListener('click', e=>{
+    const btn = e.target.closest('[data-action]'); if (!btn) return;
+    const { action, id, date, agent } = btn.dataset;
+    if (action==='add-shift')          openShiftModal({ dateKey:date, agentId:agent });
+    else if (action==='edit-shift')    openShiftModal({ shiftId:id });
+    else if (action==='add-absence')   openAbsenceModal({ dateKey:date, agentId:agent });
+    else if (action==='edit-absence')  openAbsenceModal({ absenceId:id });
+    else if (action==='toggle-day-type') toggleDayType(btn.dataset.date);
+    else if (action==='edit-agent')  openAgentModal(getAgent(id));
+    else if (action==='delete-agent') deleteAgent(id);
+    else if (action==='edit-template') openTemplateModal(getTemplate(id));
+    else if (action==='delete-template') deleteTemplate(id);
+  });
+}
+
+setupEvents();
+render();
+setInterval(() => { if (!PUBLIC_MODE && currentView==='today') renderTodayView(); if (PUBLIC_MODE) renderPublicView(); }, 60000);
+</script>
+</body>
+</html>
