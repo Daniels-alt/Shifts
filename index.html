@@ -713,19 +713,19 @@ function initFirebase() {
     fbRef.on('value', snap => {
       setSyncStatus('ok');
       if (fbWritePending) return;
-      const data = snap.val();
-      if (!data || !data.agents) {
-        // Firebase is empty — push our local state up
-        saveToFirebase();
-        return;
-      }
-      const remote = migrateState(data);
-      // Take whichever copy was saved more recently
-      if (!state._savedAt || (remote._savedAt && remote._savedAt > state._savedAt)) {
-        state = remote;
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
-        render();
-      }
+      try {
+        const data = snap.val();
+        if (!data || !data.agents) {
+          saveToFirebase();
+          return;
+        }
+        const remote = migrateState(data);
+        if (!state._savedAt || (remote._savedAt && remote._savedAt > state._savedAt)) {
+          state = remote;
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+          render();
+        }
+      } catch(e) { console.error('Firebase onValue error:', e); }
     }, err => {
       setSyncStatus('error');
       console.error('Firebase listener error:', err);
@@ -805,22 +805,34 @@ function seedState() {
   };
 }
 
+// Firebase converts empty arrays to null and arrays-of-objects to numeric-keyed objects.
+// toArr recovers a proper JS array from any of those forms.
+function toArr(v) {
+  if (!v) return [];
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'object') return Object.values(v);
+  return [];
+}
+
 function migrateState(p) {
-  if (!p.absences)   p.absences  = [];
-  if (!p.templates)  p.templates = [];
-  if (!p.dayTypes)   p.dayTypes  = {};
-  if (!p.standards)  p.standards = {};
+  // Restore arrays that Firebase may have turned into null or numeric-keyed objects
+  p.agents    = toArr(p.agents);
+  p.shifts    = toArr(p.shifts);
+  p.absences  = toArr(p.absences);
+  p.templates = toArr(p.templates);
+  if (!p.dayTypes)  p.dayTypes  = {};
+  if (!p.standards) p.standards = {};
   Object.entries(ROLES).forEach(([rid, ri]) => {
     const n = Math.round((ri.end - ri.start) * 2);
     const makeDay = () => new Array(n).fill(0);
     if (!p.standards[rid]) {
       p.standards[rid] = Array.from({length: 7}, makeDay);
-    } else if (typeof p.standards[rid][0] === 'number') {
-      p.standards[rid] = p.standards[rid].map(v => new Array(n).fill(v || 0));
     } else {
-      while (p.standards[rid].length < 7) p.standards[rid].push(makeDay());
-      p.standards[rid] = p.standards[rid].map(dayArr => {
-        const a = Array.isArray(dayArr) ? [...dayArr] : [];
+      const stdArr = toArr(p.standards[rid]);
+      while (stdArr.length < 7) stdArr.push(makeDay());
+      p.standards[rid] = stdArr.map(dayArr => {
+        if (typeof dayArr === 'number') return new Array(n).fill(dayArr);
+        const a = toArr(dayArr).map(Number);
         while (a.length < n) a.push(0);
         return a.slice(0, n);
       });
