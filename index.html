@@ -200,6 +200,16 @@
   }
   .std-input:focus { outline: none; background: #eff6ff; border-radius: 3px; }
   .std-input[value="0"] { color: #d1d5db; }
+  .std-input.std-sel { background: #bfdbfe !important; outline: 2px solid var(--primary); outline-offset: -1px; color: var(--text) !important; border-radius: 0; }
+  body.std-dragging { user-select: none; cursor: crosshair; }
+  #std-range-popup {
+    position: fixed; background: white; border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,.2);
+    padding: 10px 14px; z-index: 2000; display: none; align-items: center;
+    gap: 10px; font-size: 13px; direction: rtl; white-space: nowrap;
+  }
+  #std-range-popup.active { display: flex; }
+  #std-range-val { width: 52px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; text-align: center; font-size: 15px; font-weight: 700; }
   .coverage-legend {
     display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px;
     color: var(--muted); margin-bottom: 10px; align-items: center;
@@ -1809,6 +1819,96 @@ setupEvents();
 render();
 if (!PUBLIC_MODE) initFirebase();
 setInterval(() => { if (!PUBLIC_MODE && currentView==='today') renderTodayView(); if (PUBLIC_MODE) renderPublicView(); }, 60000);
+
+// ===== STANDARDS DRAG-TO-SELECT =====
+let stdDrag = null;
+
+document.body.addEventListener('mousedown', e => {
+  const inp = e.target.closest('.std-input');
+  if (!inp) return;
+  stdDrag = { role: inp.dataset.role, dow: +inp.dataset.dow, start: +inp.dataset.slot, end: +inp.dataset.slot, active: false };
+});
+
+document.body.addEventListener('mouseover', e => {
+  if (!stdDrag) return;
+  const inp = e.target.closest('.std-input');
+  if (!inp || inp.dataset.role !== stdDrag.role || +inp.dataset.dow !== stdDrag.dow) return;
+  const slot = +inp.dataset.slot;
+  if (slot === stdDrag.end && stdDrag.active) return;
+  stdDrag.end = slot;
+  if (slot !== stdDrag.start) { stdDrag.active = true; document.body.classList.add('std-dragging'); }
+  updateStdHighlight();
+});
+
+document.addEventListener('mouseup', e => {
+  if (!stdDrag) return;
+  if (stdDrag.active) {
+    const min = Math.min(stdDrag.start, stdDrag.end);
+    const max = Math.max(stdDrag.start, stdDrag.end);
+    const ri = ROLES[stdDrag.role];
+    const label = `${fmtH(ri.start + min * 0.5)} – ${fmtH(ri.start + (max + 1) * 0.5)}`;
+    const popup = document.getElementById('std-range-popup');
+    popup.dataset.role = stdDrag.role; popup.dataset.dow = stdDrag.dow;
+    popup.dataset.min = min; popup.dataset.max = max;
+    document.getElementById('std-range-label').textContent = label;
+    document.getElementById('std-range-val').value = 1;
+    const x = Math.min(e.clientX, window.innerWidth - 260);
+    const y = Math.max(e.clientY - 60, 8);
+    popup.style.left = x + 'px'; popup.style.top = y + 'px';
+    popup.classList.add('active');
+    setTimeout(() => document.getElementById('std-range-val').select(), 50);
+  } else {
+    clearStdHighlight();
+  }
+  document.body.classList.remove('std-dragging');
+  stdDrag = null;
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('std-range-popup').classList.contains('active')) applyStdRange();
+});
+
+document.addEventListener('mousedown', e => {
+  if (!e.target.closest('#std-range-popup')) closeStdRangePopup();
+});
+
+function updateStdHighlight() {
+  clearStdHighlight();
+  if (!stdDrag?.active) return;
+  const min = Math.min(stdDrag.start, stdDrag.end), max = Math.max(stdDrag.start, stdDrag.end);
+  document.querySelectorAll(`.std-input[data-role="${stdDrag.role}"][data-dow="${stdDrag.dow}"]`).forEach(inp => {
+    if (+inp.dataset.slot >= min && +inp.dataset.slot <= max) inp.classList.add('std-sel');
+  });
+}
+
+function clearStdHighlight() {
+  document.querySelectorAll('.std-input.std-sel').forEach(i => i.classList.remove('std-sel'));
+}
+
+function applyStdRange() {
+  const popup = document.getElementById('std-range-popup');
+  const { role, dow, min, max } = popup.dataset;
+  const val = Math.max(0, Math.min(20, parseInt(document.getElementById('std-range-val').value) || 0));
+  if (!state.standards[role]?.[+dow]) { closeStdRangePopup(); return; }
+  for (let si = +min; si <= +max; si++) state.standards[role][+dow][si] = val;
+  saveState();
+  if (currentView === 'schedule') renderCoverage();
+  renderStandardsTable();
+  closeStdRangePopup();
+}
+
+function closeStdRangePopup() {
+  document.getElementById('std-range-popup')?.classList.remove('active');
+  clearStdHighlight();
+}
 </script>
+
+<div id="std-range-popup">
+  <span style="font-weight:600;color:var(--primary)" id="std-range-label"></span>
+  <span style="color:var(--muted)">→ תקן:</span>
+  <input id="std-range-val" type="number" min="0" max="20" value="1">
+  <button class="btn btn-primary btn-sm" onclick="applyStdRange()">✓ אשר</button>
+  <button class="btn btn-sm" onclick="closeStdRangePopup()">ביטול</button>
+</div>
 </body>
 </html>
