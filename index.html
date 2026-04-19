@@ -765,7 +765,7 @@ function loadAdminState() {
         return p;
       }
     }
-  } catch(e) {}
+  } catch(e) { console.error('loadAdminState error:', e); }
   return seedState();
 }
 
@@ -807,7 +807,10 @@ function toggleDayType(dateKey) {
   render();
 }
 
-function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch(e) { console.error('saveState error:', e); showToast('שגיאה בשמירה: ' + e.message, 'danger'); }
+}
 
 // ===== Date helpers =====
 function uid(p) { return p + Date.now() + Math.floor(Math.random() * 10000); }
